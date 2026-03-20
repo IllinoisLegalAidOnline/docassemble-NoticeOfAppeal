@@ -75,6 +75,7 @@ code: |
                 vacate_first
           else:
             not_appealable  
+  set_progress(20)
   if final_judgment or special_findings or special_type:
     if motion_to_reconsider:
       if court_rule_on_post_motion:
@@ -91,6 +92,7 @@ code: |
 
   nav.set_section('section_relief')
   reverse
+  set_progress(40)
   if other_appeals:
     if not joining_appeal:
       if not separate_appeal:
@@ -105,9 +107,14 @@ code: |
     set_co_appellant_object
     if have_co_appellant_set:
       co_appellant[0].address.address
-      co_appellant[0].phone_number
-  if anyone_opposing:
+      co_appellant[0].email
+  if party_label == "plaintiff" or party_label == "petitioner":
+    if anyone_opposing:
+      other_parties.gather()
+  else:
+    anyone_opposing = True
     other_parties.gather()
+  set_progress(60)
   if in_re_check:
     in_re_label
   case_number
@@ -125,9 +132,10 @@ code: |
         person.lawyer.name.first
       person.address.address
       if person.knows_delivery_method:
-        person.mail_delivery
+        person.email_delivery
         person.delivery_date
     hand_delivery_info   
+  set_progress(80)
 
   nav.set_section('section_user')
   users[0].address.address
@@ -140,9 +148,11 @@ code: |
   next_steps
 
   nav.set_section('section_download')
+  set_progress(100)
   forms_assembling
   refresh_delivery_bundle
   snapshot_forms
+  set_progress_to_100_once
   get_docs_screen
 ---
 code: |
@@ -189,6 +199,16 @@ code: |
 code: |
   reconsider('snapshot_interview_state')
   snapshot_forms = True
+---
+# this code block will ensure that when a user reaches the download screen, My Easy Forms will list it as 100% complete
+code: |
+    al_temp_metadata = get_interview_metadata(
+      current_context().filename, current_context().session
+    )
+    al_temp_metadata["progress"] = 100
+    set_current_session_metadata(al_temp_metadata)
+    del(al_temp_metadata)
+    set_progress_to_100_once = True
 ---
 id: welcome
 question: |
@@ -255,7 +275,7 @@ fields:
 ---
 id: special findings
 question: |
-  Does the ${order_date}  order include "special findings" that can be appealed right away?
+  Does the ${order_date} order include "special findings" that can be appealed right away?
 subquestion: |
   Some orders can be appealed that affect only part of the case. These orders have "special findings" that say "there is no just reason for delaying either enforcement or appeal or both."
 
@@ -605,37 +625,47 @@ subquestion: |
 
   ${collapse_template(change_info)}
 fields: 
-  - I want the appellate court to reverse the order: reverse
+  - I want the appellate court to reverse the order.: reverse
     datatype: yesnowide
   - Do you want the appellate court to send the case back to the trial court for any additional proceedings?: reverse_send_back
     datatype: yesnoradio
     show if: reverse
-  - I want the appellate court to vacate the order: vacate
+  - I want the appellate court to vacate the order.: vacate
     datatype: yesnowide
   - Do you want the appellate court to send the case back to the trial court for a new hearing?: vacate_send_back
     datatype: yesnoradio
     show if: vacate
-  - I want the appellate court to change the order: change
+  - I want the appellate court to change the order.: change
     datatype: yesnowide
   - What do you want the order to be changed to say?: change_text
     input type: area
     rows: 3
-    maxlength: 250
+    maxlength: 150
+    show if: change
+  - note: |
+      The form has room for about **150 characters** including spaces.
     show if: change
   - I want the appellate court to make the trial court do something.: make
     datatype: yesnowide
   - What do you want the appellate court to make the trial court do?: make_text
     input type: area
     rows: 3
-    maxlength: 250
+    maxlength: 150
+    show if: make
+  - note: |
+      The form has room for about **150 characters** including spaces.
     show if: make
   - Something else: other 
     datatype: yesnowide
   - What do you want the appellate court to do?: other_text
     input type: area
     rows: 3
-    maxlength: 250
+    maxlength: 150
     show if: other
+  - note: |
+      The form has room for about **150 characters** including spaces.
+    show if: other
+  
 validation code: |
   if not reverse and not vacate and not change and not make and not other:
     validation_error("You need to pick something you want the appellate court to do.")
@@ -729,12 +759,14 @@ question: |
   What was your role in the case?
 subquestion: |
   ${ collapse_template(which_party) }  
-field: party_label
-choices:
-  - Plaintiff: plaintiff
-  - Petitioner: petitioner
-  - Defendant: defendant
-  - Respondent: respondent
+fields: 
+  - no label: party_label
+    input type: radio
+    choices:
+      - Plaintiff: plaintiff
+      - Petitioner: petitioner
+      - Defendant: defendant
+      - Respondent: respondent
 ---
 template: which_party
 subject: |
@@ -850,39 +882,11 @@ code: |
   have_co_appellant_set = False
   for index, user in enumerate(users):
     if index > 0:
-      if user.co_appealing and not have_co_appellant_set:
+      if not have_co_appellant_set and user.co_appealing:
         co_appellant.append(user)
         have_co_appellant_set = True
   co_appellant.there_is_another = False
   set_co_appellant_object= True
----
-generic object: ALIndividual
-id: other users address
-question: |
-  What is ${x.name_full()}'s mailing address?
-fields:
-  - Street address: x.address.address
-    address autocomplete: True
-  - Address line 2: x.address.unit
-    required: False
-  - City: x.address.city
-  - State: x.address.state
-    code: |
-      states_list() 
-  - ZIP code: x.address.zip
----
-id: user contact information
-question: |
-  ${x.name_full()}'s contact information
-subquestion: |
-  If you do not know, you can leave this blank.
-fields:  
-  - Phone number: x.phone_number
-    datatype: al_international_phone
-    required: False     
-  - Email address: x.email    
-    datatype: email
-    required: False
 ---
 id: any other party
 question: |
@@ -930,7 +934,7 @@ fields:
 ---
 id: circuit court case number
 question: |
-  What is your circuit Court case number?
+  What is your circuit court case number?
 subquestion: |
   The case number will be listed on your court papers. The circuit clerk gives each case a number when it is filed.
   
@@ -968,14 +972,16 @@ question: |
   In which Cook County courthouse was the court case filed?
 subquestion: |
   ${ collapse_template(cook_district_help) }  
-field: cook_district
-choices:
-  - First Municipal District, Daley Center, 50 W. Washington Street, Chicago: 15
-  - Second Municipal District, 5600 Old Orchard Road, Skokie: 16
-  - Third Municipal District, 2121 Euclid Avenue, Rolling Meadows: 17
-  - Fourth Municipal District, 1500 Maybrook Drive, Maywood: 18
-  - Fifth Municipal District, 10220 S. 76th Avenue, Bridgeview: 19
-  - Sixth Municipal District, 16501 South Kedzie Parkway, Markham: 20
+fields: 
+  - no label: cook_district
+    input type: radio
+    choices:
+      - First Municipal District, Daley Center, 50 W. Washington Street, Chicago: 15
+      - Second Municipal District, 5600 Old Orchard Road, Skokie: 16
+      - Third Municipal District, 2121 Euclid Avenue, Rolling Meadows: 17
+      - Fourth Municipal District, 1500 Maybrook Drive, Maywood: 18
+      - Fifth Municipal District, 10220 S. 76th Avenue, Bridgeview: 19
+      - Sixth Municipal District, 16501 South Kedzie Parkway, Markham: 20
 ---
 template: cook_district_help
 subject: |
@@ -1055,11 +1061,14 @@ code: |
   delivery_storage_list = []
   co_appellate_found = False
   for index in range(1, users.number_gathered()):
-    if users[index].co_appealing and not co_appellate_found :
+    if not co_appellate_found and users[index].co_appealing:
       co_appellate_found = True
     else:
       delivery_storage_list.append(users[index])
-  delivery_parties = ALPeopleList("delivery_parties", elements = other_parties + delivery_storage_list)
+  if anyone_opposing and other_parties.number_gathered() > 0:
+    delivery_parties = ALPeopleList("delivery_parties", elements = other_parties + delivery_storage_list)
+  else:
+    delivery_parties = ALPeopleList("delivery_parties", elements = delivery_storage_list)
 ---
 id: delivery intro
 continue button field: delivery_intro
@@ -1076,12 +1085,14 @@ generic object: ALIndividual
 id: has lawyer
 question: |
   Does ${ x.name_full() } have a lawyer in this case?
-field: x.is_represented
-choices:
-  - Yes: True
-  - No: False
-  - I don't know.: null 
-# note: null will be None in review screen
+fields: 
+  - no label: x.is_represented
+    input type: radio
+    choices:
+      - Yes: True
+      - No: False
+      - I don't know.: null 
+    # note: null will be None in review screen
 ---
 id: add lawyer
 generic object: ALIndividual
@@ -1137,10 +1148,12 @@ subquestion: |
   For best results, complete the Proof of Delivery section and send the forms today.
 
   If you do not know this now, you can add it to the Proof of Delivery section of your forms later.
-field: x.knows_delivery_method
-choices:
-  - Yes: True
-  - No. I do not know this now. I will add it to my forms later.: False
+fields: 
+  - no label: x.knows_delivery_method
+    input type: radio
+    choices:
+      - Yes: True
+      - No. I do not know this now. I will add it to my forms later.: False
 ---
 template: delivery_method_help
 subject: |
@@ -1263,6 +1276,8 @@ subject: |
   **What if I need help?**
 content: |  
   If you need help delivering by email or using the e-filing service provider, you can visit a [**Legal Self-Help Center**](https://www.illinoislegalaid.org/get-legal-help/lshc-directory) or you can call or text [**Illinois Court Help**](https://www.ilcourthelp.gov) at 833-411-1121.
+
+  To learn more, read [**ILAO's article about e-filing**](https://www.illinoislegalaid.org/node/109496).
 ---
 id: delivery time
 generic object: ALIndividual
@@ -1280,7 +1295,7 @@ fields:
   - Date: x.delivery_date
     datatype: date
     required: False
-    min: ${today()}
+    min: ${today().minus(years=1)}
     max: ${ today().plus(years=1) }
   - Time: x.delivery_time
     datatype: time
@@ -1309,6 +1324,60 @@ subquestion: |
   * If a party in your case does not have a lawyer, you can hand-deliver the forms to them or to a family member who is 13 or older at their home.
   * If they do have a lawyer, you can hand-deliver the forms to the lawyer or to the lawyer's office.
 ---
+id: users address
+question: |
+  % if defined('users[i].is_represented') and users[i].is_represented:
+  What is ${users[i].lawyer.name_full()}'s mailing address?
+  % else:
+  What is ${users[i].name_full()}'s mailing address?
+  % endif
+fields:
+  - Street address: users[i].address.address
+    address autocomplete: True
+  - Address line 2: users[i].address.unit
+    required: False
+  - City: users[i].address.city
+  - State: users[i].address.state
+    code: |
+      states_list() 
+  - ZIP code: users[i].address.zip
+---
+id: other party address
+sets:
+  - other_parties[i].address.address
+question: |
+  % if other_parties[i].is_represented:
+  What is ${ other_parties[i].lawyer.name_full() }'s address?
+  % else:
+  What is ${ other_parties[i].name_full() }'s address?
+  % endif
+fields:
+  - Street address: other_parties[i].address.address
+    address autocomplete: True
+  - Address line 2: other_parties[i].address.unit
+    required: False
+  - City: other_parties[i].address.city
+  - State: other_parties[i].address.state
+    code: |
+      states_list()
+    default: IL      
+  - ZIP code: other_parties[i].address.zip
+---
+sets:
+  - users[i].email
+id: user contact information
+question: |
+  ${users[i].name_full()}'s contact information
+subquestion: |
+  If you do not know, you can leave this blank.
+fields:  
+  - Phone number: users[i].phone_number
+    datatype: al_international_phone
+    required: False     
+  - Email address: users[i].email    
+    datatype: email
+    required: False
+---
 id: user address
 question: |
   What is your mailing address?
@@ -1323,6 +1392,8 @@ fields:
       states_list() 
   - ZIP code: users[0].address.zip
 ---
+sets:
+  - users[0].email
 id: your contact information
 question: |
   Your contact information
@@ -1541,6 +1612,7 @@ attachment:
     - "defendant_not_appealing": ${True if party_label == "plaintiff" or party_label == "petitioner" else False}
     - "case_number_1": ${case_number}
     - "judge_name": ${judge.name_full()}
+      #SME question: what rule applies to appealing a tro? LHI version of program does not list one for a tro.
     - "supreme_court_rule": |
         % if final_judgment:
         301
@@ -1605,11 +1677,20 @@ attachment:
         % endif
     - "delivery_party_1_address": ${delivery_parties[0].address.on_one_line(bare=True)}
     - "delivery_party_1_email": ${delivery_parties[0].email}
-    - "delivery_party_1_electronic": ${True if delivery_parties[0].email_delivery or delivery_parties[0].efm_delivery else False}
-    - "delivery_party_1_by_email": ${delivery_parties[0].email_delivery}
-    - "delivery_party_1_efsp": ${delivery_parties[0].efm_delivery}
-    - "delivery_party_1_not_electronic": ${False if delivery_parties[0].email_delivery or delivery_parties[0].efm_delivery else True}
-    - "delivery_party_1_mail": ${delivery_parties[0].mail_delivery if delivery_parties[0].physical_delivery else False}
+    - "delivery_party_1_electronic": ${True if delivery_parties[0].knows_delivery_method and (delivery_parties[0].email_delivery or delivery_parties[0].efm_delivery) else False}
+    - "delivery_party_1_by_email": ${delivery_parties[0].email_delivery if delivery_parties[0].knows_delivery_method else False}
+    - "delivery_party_1_efsp": ${delivery_parties[0].efm_delivery if delivery_parties[0].knows_delivery_method else False}
+    - "delivery_party_1_not_electronic": |
+        % if delivery_parties[0].knows_delivery_method:
+        % if delivery_parties[0].email_delivery or delivery_parties[0].efm_delivery:
+        ${False}
+        % else:
+        ${True}
+        % endif
+        % else:
+        ${False}
+        % endif
+    - "delivery_party_1_mail": ${delivery_parties[0].mail_delivery if delivery_parties[0].knows_delivery_method and delivery_parties[0].physical_delivery else False}
     - "delivery_party_1_mail_location": |
           % if delivery_parties[0].knows_delivery_method and delivery_parties[0].physical_delivery and delivery_parties[0].mail_delivery:
           % if delivery_parties[0].delivery_mail_address != "" and delivery_parties[0].delivery_mail_city != "" and delivery_parties[0].delivery_mail_state != "":
@@ -1630,10 +1711,10 @@ attachment:
           % else:
           ${ "" }
           % endif
-    - "delivery_party_1_hand": ${delivery_parties[0].hand_delivery if delivery_parties[0].physical_delivery else False}
-    - "delivery_party_1_hand_address": ${delivery_parties[0].address if delivery_parties[0].physical_delivery and delivery_parties[0].hand_delivery else ""}
-    - "delivery_party_1_from_jail": ${delivery_parties[0].jail_delivery if delivery_parties[0].physical_delivery else ""}
-    - "delivery_party_1_jail_name": ${delivery_parties[0].delivery_jail_name if delivery_parties[0].physical_delivery and delivery_parties[0].jail_delivery else ""}
+    - "delivery_party_1_hand": ${delivery_parties[0].hand_delivery if delivery_parties[0].knows_delivery_method and delivery_parties[0].physical_delivery else False}
+    - "delivery_party_1_hand_address": ${delivery_parties[0].address if delivery_parties[0].knows_delivery_method and delivery_parties[0].physical_delivery and delivery_parties[0].hand_delivery else ""}
+    - "delivery_party_1_from_jail": ${delivery_parties[0].jail_delivery if delivery_parties[0].knows_delivery_method and delivery_parties[0].physical_delivery else ""}
+    - "delivery_party_1_jail_name": ${delivery_parties[0].delivery_jail_name if delivery_parties[0].knows_delivery_method and delivery_parties[0].physical_delivery and delivery_parties[0].jail_delivery else ""}
     - "delivery_party_1_date": ${ delivery_parties[0].delivery_date if delivery_parties[0].knows_delivery_method and delivery_parties[0].knows_delivery_date else '' }
     - "delivery_party_1_time": ${ format_time(delivery_parties[0].delivery_time, format='h:mm a') if delivery_parties[0].knows_delivery_method and delivery_parties[0].knows_delivery_time else '' }
     - "delivery_party_2_name": |
@@ -1644,11 +1725,20 @@ attachment:
         % endif
     - "delivery_party_2_address": ${delivery_parties[1].address.on_one_line(bare=True)}
     - "delivery_party_2_email": ${delivery_parties[1].email}
-    - "delivery_party_2_electronic": ${True if delivery_parties[1].email_delivery or delivery_parties[1].efm_delivery else False}
-    - "delivery_party_2_by_email": ${delivery_parties[1].email_delivery}
-    - "delivery_party_2_efsp": ${delivery_parties[1].efm_delivery}
-    - "delivery_party_2_not_electronic": ${False if delivery_parties[1].email_delivery or delivery_parties[1].efm_delivery else True}
-    - "delivery_party_2_mail": ${delivery_parties[1].mail_delivery if delivery_parties[1].physical_delivery else False}
+    - "delivery_party_2_electronic": ${True if delivery_parties[1].knows_delivery_method and (delivery_parties[1].email_delivery or delivery_parties[1].efm_delivery) else False}
+    - "delivery_party_2_by_email": ${delivery_parties[1].email_delivery if delivery_parties[1].knows_delivery_method else False}
+    - "delivery_party_2_efsp": ${delivery_parties[1].efm_delivery if delivery_parties[1].knows_delivery_method else False}
+    - "delivery_party_2_not_electronic": |
+        % if delivery_parties[1].knows_delivery_method:
+        % if delivery_parties[1].email_delivery or delivery_parties[1].efm_delivery:
+        ${False}
+        % else:
+        ${True}
+        % endif
+        % else:
+        ${False}
+        % endif
+    - "delivery_party_2_mail": ${delivery_parties[1].mail_delivery if delivery_parties[1].knows_delivery_method and delivery_parties[1].physical_delivery else False}
     - "delivery_party_2_mail_location": |
           % if delivery_parties[1].knows_delivery_method and delivery_parties[1].physical_delivery and delivery_parties[1].mail_delivery:
           % if delivery_parties[1].delivery_mail_address != "" and delivery_parties[1].delivery_mail_city != "" and delivery_parties[1].delivery_mail_state != "":
@@ -1669,10 +1759,10 @@ attachment:
           % else:
           ${ "" }
           % endif
-    - "delivery_party_2_hand": ${delivery_parties[1].hand_delivery if delivery_parties[1].physical_delivery else False}
-    - "delivery_party_2_hand_address": ${delivery_parties[1].address if delivery_parties[1].physical_delivery and delivery_parties[1].hand_delivery else ""}
-    - "delivery_party_2_from_jail": ${delivery_parties[1].jail_delivery if delivery_parties[1].physical_delivery else ""}
-    - "delivery_party_2_jail_name": ${delivery_parties[1].delivery_jail_name if delivery_parties[1].physical_delivery and delivery_parties[1].jail_delivery else ""}
+    - "delivery_party_2_hand": ${delivery_parties[1].hand_delivery if delivery_parties[1].knows_delivery_method and delivery_parties[1].physical_delivery else False}
+    - "delivery_party_2_hand_address": ${delivery_parties[1].address if delivery_parties[1].knows_delivery_method and delivery_parties[1].physical_delivery and delivery_parties[1].hand_delivery else ""}
+    - "delivery_party_2_from_jail": ${delivery_parties[1].jail_delivery if delivery_parties[1].knows_delivery_method and delivery_parties[1].physical_delivery else ""}
+    - "delivery_party_2_jail_name": ${delivery_parties[1].delivery_jail_name if delivery_parties[1].knows_delivery_method and delivery_parties[1].physical_delivery and delivery_parties[1].jail_delivery else ""}
     - "delivery_party_2_date": ${ delivery_parties[1].delivery_date if delivery_parties[1].knows_delivery_method and delivery_parties[1].knows_delivery_date else '' }
     - "delivery_party_2_time": ${ format_time(delivery_parties[1].delivery_time, format='h:mm a') if delivery_parties[1].knows_delivery_method and delivery_parties[1].knows_delivery_time else '' }
     - "delivery_party_3_name": |
@@ -1683,11 +1773,20 @@ attachment:
         % endif
     - "delivery_party_3_address": ${delivery_parties[2].address.on_one_line(bare=True)}
     - "delivery_party_3_email": ${delivery_parties[2].email}
-    - "delivery_party_3_electronic": ${True if delivery_parties[2].email_delivery or delivery_parties[2].efm_delivery else False}
-    - "delivery_party_3_by_email": ${delivery_parties[2].email_delivery}
-    - "delivery_party_3_efsp": ${delivery_parties[2].efm_delivery}
-    - "delivery_party_3_not_electronic": ${False if delivery_parties[2].email_delivery or delivery_parties[2].efm_delivery else True}
-    - "delivery_party_3_mail": ${delivery_parties[2].mail_delivery if delivery_parties[2].physical_delivery else False}
+    - "delivery_party_3_electronic": ${True if delivery_parties[2].knows_delivery_method and (delivery_parties[2].email_delivery or delivery_parties[2].efm_delivery) else False}
+    - "delivery_party_3_by_email": ${delivery_parties[2].email_delivery if delivery_parties[2].knows_delivery_method else False}
+    - "delivery_party_3_efsp": ${delivery_parties[2].efm_delivery if delivery_parties[2].knows_delivery_method else False}
+    - "delivery_party_3_not_electronic": |
+        % if delivery_parties[2].knows_delivery_method:
+        % if delivery_parties[2].email_delivery or delivery_parties[2].efm_delivery:
+        ${False}
+        % else:
+        ${True}
+        % endif
+        % else:
+        ${False}
+        % endif
+    - "delivery_party_3_mail": ${delivery_parties[2].mail_delivery if delivery_parties[2].knows_delivery_method and delivery_parties[2].physical_delivery else False}
     - "delivery_party_3_mail_location": |
           % if delivery_parties[2].knows_delivery_method and delivery_parties[2].physical_delivery and delivery_parties[2].mail_delivery:
           % if delivery_parties[2].delivery_mail_address != "" and delivery_parties[2].delivery_mail_city != "" and delivery_parties[2].delivery_mail_state != "":
@@ -1708,10 +1807,10 @@ attachment:
           % else:
           ${ "" }
           % endif
-    - "delivery_party_3_hand": ${delivery_parties[2].hand_delivery if delivery_parties[2].physical_delivery else False}
-    - "delivery_party_3_hand_address": ${delivery_parties[2].address if delivery_parties[2].physical_delivery and delivery_parties[2].hand_delivery else ""}
-    - "delivery_party_3_from_jail": ${delivery_parties[2].jail_delivery if delivery_parties[2].physical_delivery else ""}
-    - "delivery_party_3_jail_name": ${delivery_parties[2].delivery_jail_name if delivery_parties[2].physical_delivery and delivery_parties[2].jail_delivery else ""}
+    - "delivery_party_3_hand": ${delivery_parties[2].hand_delivery if delivery_parties[2].knows_delivery_method and delivery_parties[2].physical_delivery else False}
+    - "delivery_party_3_hand_address": ${delivery_parties[2].address if delivery_parties[2].knows_delivery_method and delivery_parties[2].physical_delivery and delivery_parties[2].hand_delivery else ""}
+    - "delivery_party_3_from_jail": ${delivery_parties[2].jail_delivery if delivery_parties[2].knows_delivery_method and delivery_parties[2].physical_delivery else ""}
+    - "delivery_party_3_jail_name": ${delivery_parties[2].delivery_jail_name if delivery_parties[2].knows_delivery_method and delivery_parties[2].physical_delivery and delivery_parties[2].jail_delivery else ""}
     - "delivery_party_3_date": ${ delivery_parties[2].delivery_date if delivery_parties[2].knows_delivery_method and delivery_parties[2].knows_delivery_date else '' }
     - "delivery_party_3_time": ${ format_time(delivery_parties[2].delivery_time, format='h:mm a') if delivery_parties[2].knows_delivery_method and delivery_parties[2].knows_delivery_time else '' }
     - "no_second_delivery": ${True if delivery_parties.number_gathered() < 2 else False}
@@ -1740,13 +1839,13 @@ attachment:
         % endif
     - "party_address": ${x.address.on_one_line(bare=True)}
     - "party_email": ${x.email}
-    - "party_electronic": ${True if x.email_delivery or x.efm_delivery else False}
-    - "party_not_electronic": ${False if x.email_delivery or x.efm_delivery else True}
-    - "party_by_email": ${x.email_delivery}
-    - "party_efsp": ${x.efm_delivery}
-    - "party_mail": ${x.mail_delivery if x.physical_delivery else False}
-    - "party_hand": ${x.hand_delivery if x.physical_delivery else False}
-    - "party_from_jail": ${x.jail_delivery if x.physical_delivery else ""}
+    - "party_electronic": ${True if x.knows_delivery_method and (x.email_delivery or x.efm_delivery) else False}
+    - "party_not_electronic": ${False if x.email_delivery or x.efm_delivery or not x.knows_delivery_method else True}
+    - "party_by_email": ${x.email_delivery if x.knows_delivery_method else False}
+    - "party_efsp": ${x.efm_delivery if x.knows_delivery_method else False}
+    - "party_mail": ${x.mail_delivery if x.knows_delivery_method and x.physical_delivery else False}
+    - "party_hand": ${x.hand_delivery if x.knows_delivery_method and x.physical_delivery else False}
+    - "party_from_jail": ${x.jail_delivery if x.knows_delivery_method and x.physical_delivery else False}
     - "party_mail_location": |
           % if x.knows_delivery_method and x.physical_delivery and x.mail_delivery:
           % if x.delivery_mail_address != "" and x.delivery_mail_city != "" and x.delivery_mail_state != "":
@@ -1767,8 +1866,8 @@ attachment:
           % else:
           ${ "" }
           % endif
-    - "party_hand_address": ${x.address if x.physical_delivery and x.hand_delivery else ""}
-    - "party_jail_name": ${x.delivery_jail_name if x.physical_delivery and x.jail_delivery else ""}
+    - "party_hand_address": ${x.address if x.knows_delivery_method and x.physical_delivery and x.hand_delivery else ""}
+    - "party_jail_name": ${x.delivery_jail_name if x.knows_delivery_method and x.physical_delivery and x.jail_delivery else ""}
     - "party_date": ${ x.delivery_date if x.knows_delivery_method and x.knows_delivery_date else '' }
     - "party_time": ${ format_time(x.delivery_time, format='h:mm a') if x.knows_delivery_method and x.knows_delivery_time else '' }
     - "e_signature": ${users[0].name_full() if e_signature else ""}
@@ -1778,3 +1877,722 @@ attachment:
     - "appellant_street": ${users[0].address.line_one(bare=True)}
     - "appellant_csz": ${users[0].address.line_two()}
     - "for_self": ${True}
+---
+id: order review screen
+event: section_order
+section: Trial court order
+question: |
+  Trial court order
+subquestion: |
+  Edit your answers below.
+review:
+  - Edit: order_date
+    button: |
+      **Order date:**
+      ${order_date}
+  - Edit: final_judgment
+    button: |
+      **Is the ${order_date} order the final judgment?**
+      ${word(yesno(final_judgment))}
+  - Edit: special_findings
+    button: |
+      **Does the order include "special findings?"**
+      ${word(yesno(special_findings))}
+    show if: not final_judgment
+  - Edit: special_type
+    button: |
+      **Is the order a special type?**
+      ${word(yesno(special_type))}
+    show if: not final_judgment and not special_findings
+  - Edit: is_tro
+    button: |
+      **Did the order grant or deny a temporary restraining order?**
+      ${word(yesno(is_tro))}
+    show if: not final_judgment and not special_findings and not special_type
+  - Edit: rule_307_order
+    button: |
+      **Is the order one of the kinds listed in Supreme Court Rule 307(a)?**
+      ${word(yesno(rule_307_order))}
+    show if: not final_judgment and not special_findings and not special_type and not is_tro
+  - Edit: ex_parte_order
+    button: |
+      **Was the order entered ex parte?**
+      ${word(yesno(ex_parte_order))}
+    show if: rule_307_order and not final_judgment and not special_findings and not special_type and not is_tro
+  - Edit: motion_to_vacate
+    button: |
+      **Did you file a *Motion to Vacate*?**
+      % if motion_to_vacate:
+      Yes, on ${vacate_file_date}
+      % else:
+      No
+      % endif
+    show if: ex_parte_order and rule_307_order and not final_judgment and not special_findings and not special_type and not is_tro
+  - Edit: vacate_denied
+    button: |
+      **Did the court deny your *Motion to Vacate*?**
+      % if vacate_denied:
+      Yes, on ${vacate_denial_date}
+      % else:
+      No
+      % endif
+    show if: motion_to_vacate and ex_parte_order and rule_307_order and not final_judgment and not special_findings and not special_type and not is_tro
+  - Edit: motion_to_reconsider
+    button: |
+      **Did any party file a post-judgment motion?**
+      ${word(yesno(motion_to_reconsider))}
+    show if: final_judgment or special_findings or special_type
+  - Edit: court_rule_on_post_motion
+    button: |
+      **Has the trial court ruled on the post-judgment motion?**
+      % if court_rule_on_post_motion:
+      Yes, on ${reconsider_ruling_date}
+      % else:
+      No
+      % endif
+    show if: court_rule_on_post_motion and (final_judgment or special_findings or special_type)
+  - Edit: other_orders.there_are_any
+    button: |
+      **Do you want to add more orders to your appeal?**
+      ${word(yesno(other_orders.there_are_any))}
+  - Edit: other_orders.revisit
+    button: |
+      **Other orders:**
+      
+      % for item in other_orders:
+        * ${ item.name_full() }
+      % endfor
+    show if: other_orders.there_are_any
+---
+id: other orders review screen
+continue button field: other_orders.revisit
+question: |
+  Edit other orders
+subquestion: |
+  ${ other_orders.table }
+  % if other_orders.number_gathered() < 2:
+  
+  ${ other_orders.add_action() }
+  % endif
+---
+table: other_orders.table
+rows: other_orders
+columns:
+  - Order: |
+      row_item.name_full() if defined("row_item.name.first") else ""
+edit:
+  - review_other_order
+delete buttons: True
+confirm: True
+---
+id: other order review screen
+continue button field: x.review_other_order
+generic object: ALIndividual
+question: |
+  Edit the ${ x.name_full() } order
+review: 
+  - Edit: 
+      - x.date
+      - recompute:
+        - x.name.first
+    button: |
+      **Order date:**
+      ${x.date}
+---
+id: relief review screen
+event: section_relief
+section: Your appeal
+question: |
+  Your appeal
+subquestion: |
+  Edit your answers below.
+review:
+  - Edit: reverse
+    button: |
+      **What do you want the appellate court to do?**
+
+      % if reverse:
+      % if reverse_send_back:
+      * I want the appellate court to reverse the order and send the case back to the trial court for any additional proceedings.
+      % else:
+      * I want the appellate court to reverse the order
+      % endif
+      % endif
+      % if vacate:
+      % if vacate_send_back:
+      * I want the appellate court to vacate the order and send the case back to the trial court for a new hearing.
+      % else:
+      * I want the appellate court to vacate the order.
+      % endif
+      % endif
+      % if change:
+      * I want the appellate court to change the order to say "${change_text.replace("\n", " ").replace("\r", " ")}"
+      % endif
+      % if make:
+      * I want the appellate court make the trial court do the following: ${make_text.replace("\n", " ").replace("\r", " ")}
+      % endif
+      % if other:
+      * ${other_text}
+      % endif
+  - Edit: other_appeals
+    button: |
+      **Has anyone else in the case filed an appeal?**
+      ${word(yesno(other_appeals))}
+  - Edit: joining_appeal
+    button: |
+      **Are you joining someone's appeal?**
+      ${word(yesno(joining_appeal))}
+    show if: other_appeals
+  - Edit: separate_appeal
+    button: |
+      **Are you filing a separate appeal?**
+      ${word(yesno(separate_appeal))}
+    show if: other_appeals and not joining_appeal
+  - Edit: cross_appeal
+    button: |
+      **Are you filing a cross appeal?**
+      ${word(yesno(cross_appeal))}
+    show if: other_appeals and not joining_appeal and not separate_appeal
+---
+id: case details review screen
+event: section_case
+section: Case details
+question: |
+  Case details
+subquestion: |
+  Edit your answers below.
+review:
+  - Edit: party_label
+    button: |
+      **Your role:**
+      ${capitalize(party_label)}
+  - Edit: users.revisit
+    button: |
+      **${capitalize(party_label)}s:**
+
+      % for item in users:
+        * ${ item.name_full() }
+      % endfor
+  - Edit: minor_involved
+    button: |
+      **Does the case involve a minor child?**
+      ${word(yesno(minor_involved))}
+  - Edit: anyone_opposing
+    button: |
+      **Are there any ${ opposing_party }s?**
+      ${word(yesno(anyone_opposing))}
+  - Edit: other_parties.revisit
+    button: |
+      **${capitalize(opposing_party)}s:**
+      
+      % for item in other_parties:
+        * ${item.name_full()}
+      % endfor
+    show if: anyone_opposing
+  - Edit: in_re_check
+    button: |
+      **Does the case have the words "In re:" in the name?**
+      ${word(yesno(in_re_check))}
+  - Edit: in_re_label
+    button: |
+      **What does it say after "In re:"?**
+      ${in_re_label}
+    show if: in_re_check
+  - Edit: case_number
+    button: |
+      **Circuit court case number:**
+      ${case_number}
+  - Edit: 
+      - trial_court_index
+      - recompute:
+        - trial_court
+        - court_county
+    button: |
+      **County where the case took place:**
+      ${ trial_court.address.county }
+  - Edit: cook_district
+    button: |
+      **Cook County courthouse:**
+      % if cook_district == "15":
+      ${ "Daley Center, 50 W. Washington Street, Chicago" }
+      % elif cook_district == "16":
+      ${ "Second Municipal District, 5600 Old Orchard Road, Skokie" }
+      % elif cook_district == "17":
+      ${ "Third Municipal District, 2121 Euclid Avenue, Rolling Meadows" }
+      % elif cook_district == "18":
+      ${ "Fourth Municipal District, 1500 Maybrook Drive, Maywood" }
+      % elif cook_district == "19":
+      ${ "Fifth Municipal District, 10220 S. 76th Avenue, Bridgeview" }
+      % else:
+      ${ "Sixth Municipal District, 16501 South Kedzie Parkway, Markham" }
+      % endif      
+    show if: trial_court_index == -1
+  - Edit: judge.name.first
+    button: |
+      **Circuit court judge:**
+      ${judge.name_full()}
+  - Edit: appellate_district
+    button: |
+      **In which appellate district will you file?**
+      ${appellate_district}
+---
+id: edit users review screen
+continue button field: users.revisit
+question: |
+  Edit ${opposing_party}s
+subquestion: |
+  ${ users.table }
+
+  ${ users.add_action() }
+---
+id: edit other parties review screen
+continue button field: other_parties.revisit
+question: |
+  Edit ${party_label}s
+subquestion: |
+  ${ other_parties.table }
+
+  ${ other_parties.add_action() }
+---
+table: users.table
+rows: users
+columns:
+  - Name: |
+      row_item.name_full() if defined("row_item.name.first") else ""
+  - Address and other info: |
+      action_button_html(url_action(row_item.attr_name("review_delivery")), label="Edit", icon="pencil-alt")
+delete buttons: True
+confirm: True
+---
+table: other_parties.table
+rows: other_parties
+columns:
+  - Name: |
+      row_item.name_full() if defined("row_item.name.first") else ""
+  - Address and other info: |
+      action_button_html(url_action(row_item.attr_name("review_delivery")), label="Edit", icon="pencil-alt")
+delete buttons: True
+confirm: True
+---
+id: party review screen
+continue button field: x.review_delivery
+generic object: ALIndividual
+question: |
+  Edit ${ x.name_full() }'s information
+review: 
+  - Edit: x.name.first
+    button: |
+      **Party name:**
+      ${x.name_full()}
+  - Edit: x.co_appealing
+    button: |
+      **Is ${x.name_full()} joining in your appeal?**
+      ${word(yesno(x.co_appealing))}
+  - Edit: x.address.address
+    button: |
+      **${x.name_full()}'s address:**
+      ${x.address.on_one_line(bare=True)}
+    show if: x == users[0] or x.co_appealing
+  - Edit: x.has_email_address
+    button: |
+      **${x.name_full()}'s contact info:**
+
+      % if x.phone_number != "":
+        * Phone number: ${phone_number_formatted(x.phone_number)}
+      % else:
+        * Phone number: None entered
+      % endif
+      % if x.has_email_address:
+        * Email address: ${x.email}
+      % else:
+        * Email address: None entered
+      % endif
+    show if: x == users[0]
+  - Edit: x.email
+    button: |
+      **${x.name_full()}'s contact info:**
+      
+      % if x.phone_number != "":
+      * Phone number: ${phone_number_formatted(x.phone_number)}
+      % else:
+      * Phone number: None entered
+      % endif
+      % if x.email != "":
+      * Email address: ${x.email}
+      % else:
+      * Email address: None entered
+      % endif
+    show if: x.co_appealing
+  - Edit: x.is_represented
+    button: |
+      **Does ${x.name_full()} have a lawyer?**
+      % if x.is_represented is None:
+      I don't know.
+      % else:
+      ${word(yesno(x.is_represented))}
+      % endif
+  - Edit: x.lawyer.name.first
+    button: |
+      **${x.name_full()}'s lawyer:**
+      ${x.lawyer.name_full()}
+    show if: x.is_represented
+  - Edit: x.address.address
+    button: |
+      % if x.is_represented:
+      **${x.lawyer.name_full()}'s address:**
+      % else:
+      **${x.name_full()}'s address:**
+      % endif
+      ${x.address.on_one_line(bare=True)}
+  - Edit: x.knows_delivery_method
+    button: |
+      % if x.is_represented:
+      **Do you know how and when you will send your forms to ${ x.lawyer.name_full() }?**
+      % else:
+      **Do you know how and when you will send your forms to ${ x.name_full() }?**
+      % endif
+      ${word(yesno(x.knows_delivery_method))}
+  - Edit: x.email_delivery
+    button: |
+      **Delivery by: (Edit to view and change details)**
+      
+      % if x.efm_delivery == True:
+        * E-filing system
+      % endif
+      % if x.email_delivery == True:
+        * Email
+      % endif
+      % if x.physical_delivery == True:
+        * Mail, delivery company, or in-person hand delivery
+      % endif
+      % if x.physical_delivery == True:
+      % if x.mail_delivery == True:
+        * US mail or delivery company
+      % endif
+      % endif
+      % if x.physical_delivery == True:
+      % if x.hand_delivery == True:
+        * Hand delivery
+      % endif
+      % endif
+      % if x.physical_delivery == True:
+      % if x.jail_delivery == True:
+        * Mail from prison or jail
+      % endif
+      % endif
+      % if x.efm_delivery != True and x.email_delivery != True and x.physical_delivery != True:
+        * None entered
+      % endif
+    show if: x.knows_delivery_method
+  - Edit: x.delivery_date
+    button: |
+      **Delivery on:**
+      % if x.delivery_date != "" and x.delivery_time != "":
+      ${ x.delivery_date } at ${ format_time(x.delivery_time, "h:mm a") }
+      % elif x.delivery_date != "":
+      ${x.delivery_date}
+      % else:
+      I don't know.
+      % endif
+    show if: x.knows_delivery_method
+---
+id: case details review screen
+event: section_delivery
+section: Delivery
+question: |
+  Delivery
+subquestion: |
+  Edit your answers below.
+review:
+  - Edit: users.revisit
+    button: |
+      **${capitalize(party_label)}s:**
+
+      % for item in users:
+        * ${ item.name_full() }
+      % endfor
+  - Edit: anyone_opposing
+    button: |
+      **Are there any ${ opposing_party }s?**
+      ${word(yesno(anyone_opposing))}
+  - Edit: other_parties.revisit
+    button: |
+      **${capitalize(opposing_party)}s:**
+      
+      % for item in other_parties:
+        * ${item.name_full()}
+      % endfor
+    show if: anyone_opposing
+---
+id: case details review screen
+event: section_user
+section: About you
+question: |
+  About you
+subquestion: |
+  Edit your answers below.
+review:
+  - Edit: users[0].name.first
+    button: |
+      **Your name:**
+      ${users[0].name_full()}
+  - Edit: users[0].address.address
+    button: |
+      **Your address:**
+      ${users[0].address.on_one_line(bare=True)}
+  - Edit: users[0].has_email_address
+    button: |
+      **Your contact info:**
+
+      % if users[0].phone_number != "":
+      * Phone number: ${phone_number_formatted(users[0].phone_number)}
+      % else:
+      * Phone number: None entered
+      % endif
+      % if users[0].has_email_address:
+      * Email address: ${users[0].email}
+      % else:
+      * Email address: None entered
+      % endif
+  - Edit: e_signature
+    button: |
+      **Do you want to add your electronic signature to your forms?**
+      ${word(yesno(e_signature))}
+---
+id: review screen
+event: review_answers
+question: |
+  Review screen
+subquestion: |
+  Edit your answers below.
+review: 
+  - note: |
+      <h4>Trial court order</h4>
+  - Edit: order_date
+    button: |
+      **Order date:**
+      ${order_date}
+  - Edit: final_judgment
+    button: |
+      **Is the ${order_date} order the final judgment?**
+      ${word(yesno(final_judgment))}
+  - Edit: special_findings
+    button: |
+      **Does the order include "special findings?"**
+      ${word(yesno(special_findings))}
+    show if: not final_judgment
+  - Edit: special_type
+    button: |
+      **Is the order a special type?**
+      ${word(yesno(special_type))}
+    show if: not final_judgment and not special_findings
+  - Edit: is_tro
+    button: |
+      **Did the order grant or deny a temporary restraining order?**
+      ${word(yesno(is_tro))}
+    show if: not final_judgment and not special_findings and not special_type
+  - Edit: rule_307_order
+    button: |
+      **Is the order one of the kinds listed in Supreme Court Rule 307(a)?**
+      ${word(yesno(rule_307_order))}
+    show if: not final_judgment and not special_findings and not special_type and not is_tro
+  - Edit: ex_parte_order
+    button: |
+      **Was the order entered ex parte?**
+      ${word(yesno(ex_parte_order))}
+    show if: rule_307_order and not final_judgment and not special_findings and not special_type and not is_tro
+  - Edit: motion_to_vacate
+    button: |
+      **Did you file a *Motion to Vacate*?**
+      % if motion_to_vacate:
+      Yes, on ${vacate_file_date}
+      % else:
+      No
+      % endif
+    show if: ex_parte_order and rule_307_order and not final_judgment and not special_findings and not special_type and not is_tro
+  - Edit: vacate_denied
+    button: |
+      **Did the court deny your *Motion to Vacate*?**
+      % if vacate_denied:
+      Yes, on ${vacate_denial_date}
+      % else:
+      No
+      % endif
+    show if: motion_to_vacate and ex_parte_order and rule_307_order and not final_judgment and not special_findings and not special_type and not is_tro
+  - Edit: motion_to_reconsider
+    button: |
+      **Did any party file a post-judgment motion?**
+      ${word(yesno(motion_to_reconsider))}
+    show if: final_judgment or special_findings or special_type
+  - Edit: court_rule_on_post_motion
+    button: |
+      **Has the trial court ruled on the post-judgment motion?**
+      % if court_rule_on_post_motion:
+      Yes, on ${reconsider_ruling_date}
+      % else:
+      No
+      % endif
+    show if: court_rule_on_post_motion and (final_judgment or special_findings or special_type)
+  - Edit: other_orders.there_are_any
+    button: |
+      **Do you want to add more orders to your appeal?**
+      ${word(yesno(other_orders.there_are_any))}
+  - Edit: other_orders.revisit
+    button: |
+      **Other orders:**
+      
+      % for item in other_orders:
+        * ${ item.name_full() }
+      % endfor
+    show if: other_orders.there_are_any
+  - note: |
+      <h4>Your appeal</h4>
+  - Edit: reverse
+    button: |
+      **What do you want the appellate court to do?**
+
+      % if reverse:
+      % if reverse_send_back:
+      * I want the appellate court to reverse the order and send the case back to the trial court for any additional proceedings.
+      % else:
+      * I want the appellate court to reverse the order
+      % endif
+      % endif
+      % if vacate:
+      % if vacate_send_back:
+      * I want the appellate court to vacate the order and send the case back to the trial court for a new hearing.
+      % else:
+      * I want the appellate court to vacate the order.
+      % endif
+      % endif
+      % if change:
+      * I want the appellate court to change the order to say "${change_text.replace("\n", " ").replace("\r", " ")}"
+      % endif
+      % if make:
+      * I want the appellate court make the trial court do the following: ${make_text.replace("\n", " ").replace("\r", " ")}
+      % endif
+      % if other:
+      * ${other_text}
+      % endif
+  - Edit: other_appeals
+    button: |
+      **Has anyone else in the case filed an appeal?**
+      ${word(yesno(other_appeals))}
+  - Edit: joining_appeal
+    button: |
+      **Are you joining someone's appeal?**
+      ${word(yesno(joining_appeal))}
+    show if: other_appeals
+  - Edit: separate_appeal
+    button: |
+      **Are you filing a separate appeal?**
+      ${word(yesno(separate_appeal))}
+    show if: other_appeals and not joining_appeal
+  - Edit: cross_appeal
+    button: |
+      **Are you filing a cross appeal?**
+      ${word(yesno(cross_appeal))}
+    show if: other_appeals and not joining_appeal and not separate_appeal
+  - note: |
+      <h4>Case details and delivery</h4>
+  - Edit: party_label
+    button: |
+      **Your role:**
+      ${capitalize(party_label)}
+  - Edit: users.revisit
+    button: |
+      **${capitalize(party_label)}s:**
+
+      % for item in users:
+        * ${ item.name_full() }
+      % endfor
+  - Edit: minor_involved
+    button: |
+      **Does the case involve a minor child?**
+      ${word(yesno(minor_involved))}
+  - Edit: anyone_opposing
+    button: |
+      **Are there any ${ opposing_party }s?**
+      ${word(yesno(anyone_opposing))}
+  - Edit: other_parties.revisit
+    button: |
+      **${capitalize(opposing_party)}s:**
+      
+      % for item in other_parties:
+        * ${item.name_full()}
+      % endfor
+    show if: anyone_opposing
+  - Edit: in_re_check
+    button: |
+      **Does the case have the words "In re:" in the name?**
+      ${word(yesno(in_re_check))}
+  - Edit: in_re_label
+    button: |
+      **What does it say after "In re:"?**
+      ${in_re_label}
+    show if: in_re_check
+  - Edit: case_number
+    button: |
+      **Circuit court case number:**
+      ${case_number}
+  - Edit: 
+      - trial_court_index
+      - recompute:
+        - trial_court
+        - court_county
+    button: |
+      **County where the case took place:**
+      ${ trial_court.address.county }
+  - Edit: cook_district
+    button: |
+      **Cook County courthouse:**
+      % if cook_district == "15":
+      ${ "Daley Center, 50 W. Washington Street, Chicago" }
+      % elif cook_district == "16":
+      ${ "Second Municipal District, 5600 Old Orchard Road, Skokie" }
+      % elif cook_district == "17":
+      ${ "Third Municipal District, 2121 Euclid Avenue, Rolling Meadows" }
+      % elif cook_district == "18":
+      ${ "Fourth Municipal District, 1500 Maybrook Drive, Maywood" }
+      % elif cook_district == "19":
+      ${ "Fifth Municipal District, 10220 S. 76th Avenue, Bridgeview" }
+      % else:
+      ${ "Sixth Municipal District, 16501 South Kedzie Parkway, Markham" }
+      % endif      
+    show if: trial_court_index == -1
+  - Edit: judge.name.first
+    button: |
+      **Circuit court judge:**
+      ${judge.name_full()}
+  - Edit: appellate_district
+    button: |
+      **In which appellate district will you file?**
+      ${appellate_district}
+  - note: |
+      <h4>About you</h4>
+  - Edit: users[0].name.first
+    button: |
+      **Your name:**
+      ${users[0].name_full()}
+  - Edit: users[0].address.address
+    button: |
+      **Your address:**
+      ${users[0].address.on_one_line(bare=True)}
+  - Edit: users[0].has_email_address
+    button: |
+      **Your contact info:**
+
+      % if users[0].phone_number != "":
+      * Phone number: ${phone_number_formatted(users[0].phone_number)}
+      % else:
+      * Phone number: None entered
+      % endif
+      % if users[0].has_email_address:
+      * Email address: ${users[0].email}
+      % else:
+      * Email address: None entered
+      % endif
+  - Edit: e_signature
+    button: |
+      **Do you want to add your electronic signature to your forms?**
+      ${word(yesno(e_signature))}
