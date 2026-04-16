@@ -1,12 +1,12 @@
 [build-system]
 requires = [
-    "setuptools==80.9.0",
+    "setuptools>=80.9.0",
 ]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "docassemble.NoticeOfAppeal"
-version = "0.0.3"
+version = "0.0.4"
 description = "A docassemble extension."
 readme = "README.md"
 authors = [

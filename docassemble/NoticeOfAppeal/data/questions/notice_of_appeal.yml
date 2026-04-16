@@ -87,6 +87,7 @@ code: |
     order_eligible
   else:
     not_appealable
+  about_fees
   if other_orders.there_are_any:
     other_orders.gather()
 
@@ -94,20 +95,16 @@ code: |
   reverse
   set_progress(40)
   if other_appeals:
-    if not joining_appeal:
-      if not separate_appeal:
-        if not cross_appeal:
-          need_appeal_type
+    appeal_type
    
   nav.set_section('section_case')
   party_label
   users.gather()
   minor_involved
   if users.number_gathered() > 1:
-    set_co_appellant_object
-    if have_co_appellant_set:
-      co_appellant[0].address.address
-      co_appellant[0].email
+    if any_co_appellant():
+      get_co_appellant().address.address
+      get_co_appellant().email
   if party_label == "plaintiff" or party_label == "petitioner":
     if anyone_opposing:
       other_parties.gather()
@@ -141,10 +138,10 @@ code: |
   users[0].address.address
   users[0].has_email_address
   e_signature
-  if users.number_gathered() > 1 and have_co_appellant_set:
+  if any_co_appellant():
     other_signature
-  if late_appeal:
-    appellate_motion_required
+  #if late_appeal:
+  #  appellate_motion_required
   next_steps
 
   nav.set_section('section_download')
@@ -165,7 +162,57 @@ code: |
 #users gather loop
 code: |
   users[i].name.first
+  if i == 0 or any_co_appellant():
+    if not defined('users[i].is_joining'):
+      users[i].is_joining = False
+  else:
+    users[i].is_joining
   users[i].complete = True
+---
+id: basic debug
+continue button field: basic_debug
+question: |
+  Debug
+subquestion: |
+  Hello
+---
+#id: function debug
+#continue button field: users[i].function_debug
+#question: |
+#  Debug
+#subquestion: |
+#  Current entry: ${users[i].name_full()}
+#  
+#  any_co_appellant returns ${any_co_appellant()}
+#
+#  users number gathered returns ${users.number_gathered()}
+#---
+#id: inner debug
+#continue button field: users[i].inner_debug
+#question: |
+#  Inner debug
+#subquestion: |
+#  We're reaching this point in the function.
+#
+#  % if i > 0:
+#  The previous list entry's is_joining value is ${users[i-1].is_joining}.
+#  % endif
+---
+code: |
+  def any_co_appellant():
+    if users.number_gathered() > 1:
+      for user in users[1:]:
+        if defined('user.is_joining'):
+          if user.is_joining:          
+            return True
+    return False
+---
+code: |
+  def get_co_appellant():
+    for user in users[1:]:
+      if user.is_joining:
+        return user
+    #return "none"
 ---
 code: |
   #other parties gather loop
@@ -216,9 +263,9 @@ question: |
 subquestion: |
   Welcome to Illinois Legal Aid Online's **Notice of appeal** Easy Form.
 
-  This program helps you make a *Notice of appeal*. You can use it to tell the court and other parties in your case that you are appealing a decision by the trial court judge
+  This program helps you make a *Notice of Appeal*. You can use it to tell the court and other parties in your case that you are appealing a decision by the circuit (trial) court judge.
 
-  To learn more, read ILAO's article about [**appealing a circuit court decision**](https://www.illinoislegalaid.org/node/169561).
+  To learn more, read ILAO's article about [**civil appeals basics**](https://www.illinoislegalaid.org/node/171791).
 field: sees_nav_bar
 ---
 id: instructions
@@ -230,7 +277,7 @@ subquestion: |
 
   * A copy of each order you want to appeal,
   * Name and address of any other parties in the case,
-  * Name and address of any other parties' lawyers, and
+  * Name and address of any other parties' lawyers, if any, and
   * To know if any other appeals have already been filed in the case.
 
   Set aside 10 to 20 minutes to finish this program. You can log in and save your work to continue later. 
@@ -250,17 +297,21 @@ continue button field: about_appeals
 question: |
   About filing an appeal
 subquestion: |
-  An appeal is a request to change a trial court's decision. A court that hears appeals is called an appellate court. An appellate court can change part of or all of a trial court's decision, make the trial court rehear the case, or grant other types of relief.
+  An appeal is a request to change a trial court's decision. A court that hears appeals is called an appellate court. An appellate court can change part of or all of a trial court's decision, make the trial court rehear the case, or grant other types of relief. 
 
-  You can start an appeal by filing a Notice of Appeal. If someone else in the case has filed an appeal, you can use a Notice of Appeal to join their appeal, file an appeal replying to their appeal, or file a separate appeal.
+  You can start an appeal by filing a *Notice of Appeal*. If someone else in the case has filed an appeal, you can use a *Notice of Appeal* to join their appeal, file an appeal replying to their appeal, or file a separate appeal.
 
-  Usually you need to file a Notice of Appeal within 30 days of the court's decision. If someone else in the case has filed a post-judgment motion, you need to file within 30 days of the court ruling on their motion. If you are appealing a temporary restraining order or the denial of one, you must file within 2 days.
+  **Note:** You have to file your appeal quickly. If you take too long, you may not be able to appeal at all. Usually, you need to file a *Notice of Appeal* within 30 days of the court's decision. If someone else in the case has filed a post-judgment motion, you need to file within 30 days of the court ruling on their motion. If you are appealing a temporary restraining order or the denial of one, you must file within 2 days.
+
+  This Easy Form will help you figure out if you are able to appeal the trial court's decision. To learn more, read ILAO's article about [**appealing a circuit court decision**](https://www.illinoislegalaid.org/node/169561).
 ---
 id: order date
 question: |
   What is the date the order or judgment you want to appeal?
 subquestion: |
   This is the date the court issued its ruling.
+
+  If the court issued more than one order, you should enter the date of the most recent order. You will be able to add information about the other orders later in the interview.
 fields:
   - Order date: order_date
     datatype: date
@@ -322,15 +373,12 @@ continue button field: tro_too_old
 question: |
   Deadline missed
 subquestion: |
-  You must file an appeal of a temporary restraining order (TRO) within 2 days.
+  You missed the deadline to appeal the ${order_date} order. You must file an appeal of a temporary restraining order (TRO) within 2 days, and ithas been ${date_difference(starting=order_date, ending=today())} since the TRO was entered. However, you may still be able to appeal if:
+ 
+  * You ask the appellate court to extend the filing deadline, and
+  * The appellate court grants your request.
 
-  It has been ${date_difference(starting=order_date, ending=today())} since the TRO was entered.
-
-   You may ask for more time to file your *Notice of Appeal*. To do so, file a motion for leave to file a late Notice of Appeal with the appellate court within 30 days of when your *Notice of Appeal* was originally due. You must attach your Notice of Appeal to the motion and pay a $50 filing fee. If you cannot afford to pay the filing fee, you can ask the court to file for free or at a reduced cost by filing an Appellate Fee Waiver.
-
-  **Note:** the appellate court does not have to give you more time to file your *Notice of Appeal*. The appellate court may dismiss your appeal if you do not have a “reasonable excuse” for filing a late Notice of Appeal. You can use the [**Appellate Motion form on the Illinois Supreme Court's website**](https://www.illinoiscourts.gov/forms/approved-forms/approved-statewide-forms-appellate-forms/motion/) to request an extension of time.
-
-  Click **Back** if you made a mistake, or **Next** to keep going.
+  Click **Back** if you made a mistake, or **Next** to keep going. If you keep going, you can use the [**Appellate Motion form on the Illinois Courts' website**](https://www.illinoiscourts.gov/forms/approved-forms/approved-statewide-forms-appellate-forms/motion/) to request an extension of time.
 ---
 id: rule 307 order
 question: |
@@ -410,6 +458,7 @@ fields:
   - When did the court deny your *Motion to Vacate*?: vacate_denial_date
     datatype: date
     max: ${today()}
+    min: ${vacate_file_date}
     show if: vacate_denied
 ---
 id: post vacate late
@@ -419,11 +468,11 @@ question: |
 subquestion: |
   You must file an appeal within 30 days after a *Motion to Vacate* is denied.
 
-  It has been ${int(date_difference(starting=vacate_denial_date, ending=today()))} days since the *Motion to Vacate* was denied.
+  It has been ${date_difference(starting=vacate_denial_date, ending=today())} since the *Motion to Vacate* was denied.
 
   You may ask for more time to file your *Notice of Appeal*. To do so, file a motion for leave to file a late Notice of Appeal with the appellate court within 30 days of when your *Notice of Appeal* was originally due. You must attach your Notice of Appeal to the motion and pay a $50 filing fee. If you cannot afford to pay the filing fee, you can ask the court to file for free or at a reduced cost by filing an Appellate Fee Waiver.
 
-  **Note:** the appellate court does not have to give you more time to file your *Notice of Appeal*. The appellate court may dismiss your appeal if you do not have a “reasonable excuse” for filing a late Notice of Appeal. You can use the [**Appellate Motion form on the Illinois Supreme Court's website**](https://www.illinoiscourts.gov/forms/approved-forms/approved-statewide-forms-appellate-forms/motion/) to request an extension of time.
+  **Note:** the appellate court does not have to give you more time to file your *Notice of Appeal*. The appellate court may dismiss your appeal if you do not have a "reasonable excuse" for filing a late Notice of Appeal. You can use the [**Appellate Motion form on the Illinois Courts' website**](https://www.illinoiscourts.gov/forms/approved-forms/approved-statewide-forms-appellate-forms/motion/) to request an extension of time.
 
   Click **Back** if you made a mistake, or *Next** to keep going.
 ---
@@ -434,7 +483,7 @@ question: |
 subquestion: |
   You must wait at least 8 days after you filed your *Motion to Vacate* before you appeal the ${order_date} order.
 
-  It has been  ${date_difference(starting=vacate_file_date, ending=today())} days since the *Motion to Vacate* was filed.
+  It has been ${date_difference(starting=vacate_file_date, ending=today())} since the *Motion to Vacate* was filed. Once enough time has passed, you can come back and use this program again.
 
   **Note:** You must file your appeal between 8 days and 30 days after you filed your *Motion to Vacate*.
 
@@ -453,11 +502,11 @@ subquestion: |
   * You must wait at least 8 days after you filed your *Motion to Vacate*, and
   * You must file your appeal no later than 30 days from when you filed your *Motion to Vacate*.
  
-  It has been ${int(date_difference(starting=vacate_file_date, ending=today()))} days since the Motion to Vacate was filed.
+  It has been ${date_difference(starting=vacate_file_date, ending=today())} days since the Motion to Vacate was filed.
 
   You may ask for more time to file your *Notice of Appeal*. To do so, file a motion for leave to file a late Notice of Appeal with the appellate court within 30 days of when your *Notice of Appeal* was originally due. You must attach your Notice of Appeal to the motion and pay a $50 filing fee. If you cannot afford to pay the filing fee, you can ask the court to file for free or at a reduced cost by filing an Appellate Fee Waiver.
 
-  **Note:** the appellate court does not have to give you more time to file your *Notice of Appeal*. The appellate court may dismiss your appeal if you do not have a “reasonable excuse” for filing a late Notice of Appeal. You can use the [**Appellate Motion form on the Illinois Supreme Court's website**](https://www.illinoiscourts.gov/forms/approved-forms/approved-statewide-forms-appellate-forms/motion/) to request an extension of time.
+  **Note:** the appellate court does not have to give you more time to file your *Notice of Appeal*. The appellate court may dismiss your appeal if you do not have a "reasonable excuse" for filing a late Notice of Appeal. You can use the [**Appellate Motion form on the Illinois Courts' website**](https://www.illinoiscourts.gov/forms/approved-forms/approved-statewide-forms-appellate-forms/motion/) to request an extension of time.
 
   Click **Back** if you made a mistake, or *Next** to keep going.
 ---
@@ -466,7 +515,7 @@ event: not_appealable
 question: |
   Sorry
 subquestion: |
-  The ${order_date} order is not eligible for appeal using this program.
+  The ${order_date} order is not eligible for appeal using this program. This program can only be used for final judgments, special findings, Rule 304 orders, temporary restraining orders, and Rule 307 orders.
 
   You may want to talk with a lawyer to discuss your options. Use **[Get Legal Help](https://www.illinoislegalaid.org/get-legal-help)** to find free or low-cost legal services in your area.
 
@@ -504,7 +553,7 @@ event: ruling_pending_kickout
 question: |
   Sorry
 subquestion: |
-  The ${order_date} order cannot be appealed until the court rules on the *Motion to Reconsider* or other post-judgment motion.
+  The ${order_date} order cannot be appealed until the court rules on the *Motion to Reconsider* or other post-judgment motion. Once enough the court has ruled on it, you can come back and use this program again.
 
   If you made a mistake, you can click the **Back** button or **Restart** the interview.
 buttons:
@@ -522,9 +571,23 @@ subquestion: |
 
   You may ask for more time to file your *Notice of Appeal*. To do so, file a motion for leave to file a late Notice of Appeal with the appellate court within 30 days of when your *Notice of Appeal* was originally due. You must attach your Notice of Appeal to the motion and pay a $50 filing fee. If you cannot afford to pay the filing fee, you can ask the court to file for free or at a reduced cost by filing an Appellate Fee Waiver.
 
-  **Note:** the appellate court does not have to give you more time to file your *Notice of Appeal*. The appellate court may dismiss your appeal if you do not have a “reasonable excuse” for filing a late Notice of Appeal. You can use the [**Appellate Motion form on the Illinois Supreme Court's website**](https://www.illinoiscourts.gov/forms/approved-forms/approved-statewide-forms-appellate-forms/motion/) to request an extension of time.
+  **Note:** the appellate court does not have to give you more time to file your *Notice of Appeal*. The appellate court may dismiss your appeal if you do not have a "reasonable excuse" for filing a late Notice of Appeal. You can use the [**Appellate Motion form on the Illinois Courts' website**](https://www.illinoiscourts.gov/forms/approved-forms/approved-statewide-forms-appellate-forms/motion/) to request an extension of time.
 
   Click **Back** if you made a mistake, or **Next** to keep going.
+---
+id: too late
+event: too_late
+question: |
+  Sorry
+subquestion: |
+  Too much time has passed for you to appeal the order. You can only file an appeal after the deadline by filing a motion for leave to file a late *Notice of Appeal* within 30 days of the deadline.
+
+  You may want to talk with a lawyer to discuss your options. Use **[Get Legal Help](https://www.illinoislegalaid.org/get-legal-help)** to find free or low-cost legal services in your area.
+
+  If you made a mistake, you can click the **Back** button or **Restart** the interview.
+buttons:
+  - Exit: exit
+  - Restart: restart
 ---
 id: order eligible
 continue button field: order_eligible
@@ -541,20 +604,27 @@ subquestion: |
   * You ask the appellate court to extend the filing deadline, and
   * The appellate court grants your request.
 
-  ${collapse_template(extend_deadline_info)}
+  To ask for more time, file a motion for leave to file a late Notice of Appeal with the appellate court within 30 days of when your *Notice of Appeal* was originally due. You must attach your *Notice of Appeal* to the motion. You can make a motion asking the court for more time using ILAO's [**Motion to continue or extend time Easy Form**](https://www.illinoislegalaid.org/node/30866).
 
-  You must attach a copy of the *Notice of Appeal* to your request.
+ **Note:** the appellate court does not have to give you more time to file your *Notice of Appeal*. The appellate court may dismiss your appeal if you do not have a "reasonable excuse" for filing a late Notice of Appeal. You can use the [**Appellate Motion form on the Illinois Courts' website**](https://www.illinoiscourts.gov/forms/approved-forms/approved-statewide-forms-appellate-forms/motion/) to request an extension of time.
  % else:
   The ${order_date} order can be appealed.
  % endif
 ---
-template: extend_deadline_info
-subject: |
-  **Asking the appellate court to extend a deadline**
-content: |
-  You may ask for more time to file your *Notice of Appeal*. To do so, file a motion for leave to file a late Notice of Appeal with the appellate court within 30 days of when your *Notice of Appeal* was originally due. You must attach your Notice of Appeal to the motion and pay a $50 filing fee. If you cannot afford to pay the filing fee, you can ask the court to file for free or at a reduced cost by filing an Appellate Fee Waiver.
+#template: extend_deadline_info
+#subject: |
+#  **Asking the appellate court to extend a deadline**
+#content: |
+#  You may ask for more time to file your *Notice of Appeal*. To do so, file a motion for leave to file a late Notice of Appeal with the appellate court within 30 days of when your *Notice of Appeal* was originally due. You must attach your Notice of Appeal to the motion and pay a $50 filing fee. If you cannot afford to pay the filing fee, you can ask the court to file for free or at a reduced cost by filing an Appellate Fee Waiv#er.
 
-  **Note:** the appellate court does not have to give you more time to file your *Notice of Appeal*. The appellate court may dismiss your appeal if you do not have a “reasonable excuse” for filing a late Notice of Appeal. You can use the [**Appellate Motion form on the Illinois Supreme Court's website**](https://www.illinoiscourts.gov/forms/approved-forms/approved-statewide-forms-appellate-forms/motion/) to request an extension of time.
+#  **Note:** the appellate court does not have to give you more time to file your *Notice of Appeal*. The appellate court may dismiss your appeal if you do not have a "reasonable excuse" for filing a late Notice of Appeal. You can use the [**Appellate Motion form on the Illinois Courts' website**](https://www.illinoiscourts.gov/forms/approved-forms/approved-statewide-forms-appellate-forms/motion/) to request an extension of time.
+---
+id: about fees
+continue button field: about_fees
+question: |
+  About filing fees
+subquestion: |
+  Appellate courts usually charge a fee to file an appeal. If you would like to ask the court to waive the fee, you can use ILAO's [**Fee waiver - appellate court Easy Form**](https://www.illinoislegalaid.org/node/109496).
 ---
 reconsider: True
 code: |
@@ -562,30 +632,42 @@ code: |
     if not motion_to_reconsider:
       if today().minus(days=30) > order_date:
         late_appeal = True
+        if today().minus(days=60) > order_date:
+          too_late
       else:
         late_appeal = False
     elif today().minus(days=30) > reconsider_ruling_date:
       late_appeal = True
+      if today().minus(days=60) > reconsider_ruling_date:
+        too_late
     else:
       late_appeal = False
   elif is_tro:
     if today().minus(days=2) > order_date:
       late_appeal = True
+      if today().minus(days=32) > order_date:
+        too_late
     else:
       late_appeal = False
   elif rule_307_order and ex_parte_order and motion_to_vacate:
     if vacate_denied:
       if today().minus(days=30) > vacate_denial_date:
         late_appeal = True
+        if today().minus(days=60) > vacate_denial_date:
+          too_late
       else:
         late_appeal = False
     elif today().minus(days=30) > vacate_file_date:
       late_appeal = True
+      if today().minus(days=60) > vacate_file_date:
+        too_late
     else:
       late_appeal = False
   #These last few lines aren't intended to catch any specific situation, they are a failsafe in case there is a pathway not caught by the rest of this codeblock.
   elif today().minus(days=30) > order_date:
     late_appeal = True
+    if today().minus(days=60) > order_date:
+      too_late
   else:
     late_appeal = False
 ---
@@ -593,7 +675,9 @@ id: other orders there are any
 question: |
   Do you want to add more orders to your appeal?
 subquestion: |
-  You can add up to 2 additional orders to your *Notice of Appeal* if they led to the ${order_date} order or judgment.
+  You can add up to 2 additional orders to your *Notice of Appeal*.
+  
+  Additional orders can only be added if they led to the ${order_date} order or judgment. This means they must have been part of the same case and touch on some of the same issues as the ${order_date} order or judgment.
 fields:
   - no label: other_orders.there_are_any
     datatype: yesnoradio
@@ -601,6 +685,8 @@ fields:
 id: other orders date
 question: |
   What is the date of the ${ordinal(i)} other order you want to appeal?
+subquestion: |
+  Another order can only be added if it led to the ${order_date} order or judgment. This means it must have been part of the same case and touch on some of the same issues as the ${order_date} order or judgment.
 fields:
   - Order date: other_orders[i].date
     datatype: ThreePartsDate
@@ -619,27 +705,29 @@ id: relief types
 question: |
   What do you want the appellate court to do?
 subquestion: |
-  ${collapse_template(reverse_info)}
-
-  ${collapse_template(vacate_info)}
-
-  ${collapse_template(change_info)}
-fields: 
-  - I want the appellate court to reverse the order.: reverse
+  You can ask the appellate court to do several things. Check all that apply.
+fields:
+  - I want the appellate court to **reverse** the order.: reverse
     datatype: yesnowide
+  - note: |
+      ${collapse_template(reverse_info)}    
   - Do you want the appellate court to send the case back to the trial court for any additional proceedings?: reverse_send_back
     datatype: yesnoradio
     show if: reverse
-  - I want the appellate court to vacate the order.: vacate
+  - I want the appellate court to **vacate** the order.: vacate
     datatype: yesnowide
+  - note: |
+      ${collapse_template(vacate_info)}    
   - Do you want the appellate court to send the case back to the trial court for a new hearing?: vacate_send_back
     datatype: yesnoradio
     show if: vacate
-  - I want the appellate court to change the order.: change
+  - I want the appellate court to **change** the order.: change
     datatype: yesnowide
+  - note: |
+      ${collapse_template(change_info)}    
   - What do you want the order to be changed to say?: change_text
     input type: area
-    rows: 3
+    rows: 4
     maxlength: 150
     show if: change
   - note: |
@@ -649,7 +737,7 @@ fields:
     datatype: yesnowide
   - What do you want the appellate court to make the trial court do?: make_text
     input type: area
-    rows: 3
+    rows: 4
     maxlength: 150
     show if: make
   - note: |
@@ -659,13 +747,12 @@ fields:
     datatype: yesnowide
   - What do you want the appellate court to do?: other_text
     input type: area
-    rows: 3
+    rows: 4
     maxlength: 150
     show if: other
   - note: |
       The form has room for about **150 characters** including spaces.
     show if: other
-  
 validation code: |
   if not reverse and not vacate and not change and not make and not other:
     validation_error("You need to pick something you want the appellate court to do.")
@@ -698,65 +785,93 @@ id: other appeals
 question: |
   Has anyone else in the case filed an appeal?
 subquestion: |
-  If someone has filed an appeal on any order that was a part of this case, click **Yes**.
+  If someone on either side has filed an appeal on any order that was a part of this case, click **Yes**.
 fields:
   - no label: other_appeals
     datatype: yesnoradio
 ---
-id: joining appeal
+id: appeal type
 question: |
-  Are you joining the appeal of another party?
+  What type of appeal are you filing?
 subquestion: |
-  Click **Yes** if you are appealing the same order as another party in the case and you want the same relief they want.
+  Since someone else in your case has filed an appeal, you must either **join the appeal**, file a **separate appeal**, or file a **cross appeal**.
 
-  You are "joining a prior appeal" if you are the second appellant and you are adding your name to the first appellant’s Notice of Appeal. In this appeal, two appellants proceed together against the appellee. For example, if two roommates are evicted and one roommate appeals the eviction, the other roommate can join the appeal.
+  You are **joining an appeal** if you are adding your name to the the other party’s Notice of Appeal. With a joint appeal, two appellants proceed together against the appellee. For example, if two roommates are evicted and one roommate appeals the eviction, the other roommate can join the appeal.
+
+  You are filing a **separate appeal** if another party has appealed but you are not joining their Notice of Appeal. With a separate appeal, you can go against the other party or appeal a different order than them. For example, if two roommates are evicted and one roommate appeals only the eviction order, the other roommate can file a separate appeal to attack an order for past-due rent.
+
+  You can file a **cross appeal** to respond to another party's appeal or file an appeal against the other party. In this appeal, you can attack an order or part of an order that wrongly gave relief to the appellant. For example, if a landlord gets an eviction order against a tenant but the court does not award past due rent, the tenant can appeal the eviction. The landlord can cross appeal the denial of rent.
 fields:
-  - no label: joining_appeal
-    datatype: yesnoradio
+  - no label: appeal_type
+    input type: radio
+    choices:
+      - I am joining another party's appeal.: join
+      - I am filing a separate appeal.: separate
+      - I am filing a cross appeal in response to another party's appeal: cross
 ---
-id: separate appeal
-question: |
-  Are you filing a separate appeal?
-subquestion: |
-  Click **Yes** if someone else filed an appeal but you are:
-
-  * Appealing a different order, or
-  * Asking the court to do something different than what the other party who appealed asked.
-
-  You are filing a “separate appeal” if you are the second appellant but you are not joining the first appellant’s Notice of Appeal. In this appeal, you can go against different appellees or attack different orders than the first appellant. For example, if two roommates are evicted and one roommate appeals only the eviction order, the other roommate can file a separate appeal to attack an order for past-due rent.
-fields:
-  - no label: separate_appeal
-    datatype: yesnoradio
+#id: joining appeal
+#question: |
+#  Are you joining the appeal of another party?
+#subquestion: |
+#  Click **Yes** if you are appealing the same order as another party in the case and you want the same relief they want.
+#
+#  You are "joining a prior appeal" if you are the second appellant and you are adding your name to the first appellant’s Notice of Appeal. In this appeal, two appellants proceed together against the appellee. For example, if two roommates are evicted and one roommate appeals the eviction, the other roommate can join the appeal.
+#fields:
+#  - no label: joining_appeal
+#    input type: radio
+#    choices: 
+#      - Yes, I am joining another party's appeal.: True
+#      - No, I am not joining another party's appeal.: False
+#---
+#id: separate appeal
+#question: |
+#  Are you filing a separate appeal?
+#subquestion: |
+#  Click **Yes** if someone else filed an appeal but you are:
+#
+#  * Appealing a different order, or
+#  * Asking the court to do something different than what the other party who appealed asked.
+#
+#  You are filing a "separate appeal" if you are the second appellant but you are not joining the first appellant’s Notice of Appeal. In this appeal, you can go against different appellees or attack different orders than the first appellant. For example, if two roommates are evicted and one roommate appeals only the eviction order, the other roommate can file a separate appeal to attack an order for past-due rent.
+#fields:
+#  - no label: separate_appeal
+#    input type: radio
+#    choices: 
+#      - Yes, I am filing my own appeal even though another party has appealed.: True
+#      - No, I am not filing a separate appeal of an order another party has appealed.: False
 ---
-id: cross appeal
-question: |
-  Are you filing a cross appeal?
-subquestion: |
-  Click **Yes** if someone in your case has filed an appeal, and you want to
-
-  * Respond to that appeal, or
-  * File your own appeal against that person.
-
-  You would file a "cross appeal" to respond to another party's appeal. You would also file a "cross appeal" if you want to file your own appeal against the appellant. In this appeal, you are the “cross appellant” and can attack an order or part of an order that wrongly gave relief to the appellant. For example, if a landlord gets an eviction order against a tenant but the court does not award past due rent, the tenant can appeal the eviction. The landlord can cross appeal the denial of rent.
-fields:
-  - no label: cross_appeal
-    datatype: yesnoradio
----
-id: need appeal type
-event: need_appeal_type
-question: |
-  Sorry
-subquestion: |
-  If another party has filed an appeal, you must either join their appeal, file a separate appeal, or file a cross appeal.
-
-  If you made a mistake, you can click the **Back** button or **Restart** the interview.
-buttons:
-  - Exit: exit
-  - Restart: restart
+#id: cross appeal
+#question: |
+#  Are you filing a cross appeal?
+#subquestion: |
+#  Click **Yes** if someone in your case has filed an appeal, and you want to
+#
+#  * Respond to that appeal, or
+#  * File your own appeal against that person.
+#
+#  You would file a "cross appeal" to respond to another party's appeal. You would also file a "cross appeal" if you want to file your own appeal against the appellant. In this appeal, you are the "cross appellant" and can attack an order or part of an order that wrongly gave relief to the appellant. For example, if a landlord gets an eviction order against a tenant but the court does not award past due rent, the tenant can appeal the eviction. The landlord can cross appeal the denial of rent.
+#fields:
+#  - no label: cross_appeal
+#    input type: radio
+#    choices: 
+#      - Yes, I am filing an appeal in response to another party's appeal.: True
+#      - No, I am not filing an appeal in response to another appeal. False
+#---
+#id: need appeal type
+#event: need_appeal_type
+#question: |
+#  Sorry
+#subquestion: |
+#  If another party has filed an appeal, you must either join their appeal, file a separate appeal, or file a cross appeal.
+#
+#  If you made a mistake, you can click the **Back** button or **Restart** the interview.
+#buttons:
+#  - Exit: exit
+#  - Restart: restart
 ---
 id: party label
 question: |
-  What was your role in the case?
+  What was your role in the circuit court case?
 subquestion: |
   ${ collapse_template(which_party) }  
 fields: 
@@ -772,9 +887,9 @@ template: which_party
 subject: |
   **Learn more about roles and party labels**
 content: |
-  If you filed the original case, you are either the Plaintiff or the Petitioner.
+  If you were the first person to file a form in the circuit court case, you started the case. You are the **Plaintiff** or the **Petitioner.**
 
-  If someone filed the original case against you, you are either the Defendant or the Respondent.
+  If you were responding to a circuit court case or court papers someone else filed, you are the **Defendant** or the **Respondent.**
 
   The other court forms in the case should help you figure it out. Look at the top (the caption) of the Petition, Complaint, or Order. That form should have a label by your name.
 ---
@@ -837,7 +952,7 @@ fields:
 ---
 id: any other users
 question: |
-  Was anyone else on your side of the case?
+  Was anyone else on your side of the circuit court case?
 subquestion: |
   % if len(users.elements) > 1:  
   So far you have told us about ${fix_punctuation(users.full_names())}
@@ -863,6 +978,49 @@ fields:
   - no label: minor_involved
     datatype: yesnoradio
 ---
+#id: anyone joining appeal
+#question: |
+#  Is anyone joining your appeal?
+#subquestion: |
+#  If another ${party_label} wants the same relief as you, they can join your appeal. To do so, they will have to sign your *Notice of Appeal*.
+#
+#  **Note:** if a co-party has already filed an appeal, they cannot join your appeal.
+#
+#  The *Notice of Appeal* form only allows you to have one co-appellant sign appeal the case with you. If you want to file an appeal with more than one co-appellant, you may want to talk with a lawyer to discuss your options. Use **[Get Legal Help](https://www.illinoislegalaid.org/get-legal-help)** to find free or low-cost legal services in your area.
+#fields:
+#  - Is anyone joining in your appeal?: anyone_joining
+#    input type: radio
+#    code: co_appellant_options
+# #   datatype: yesnoradio
+#  #- Co-appellant: co_appellant_name
+#---
+#code: |
+#  for user in users:
+#    if co_appellant_name == user.name_full():
+#      user.is_joining = True
+#    else:
+#      user.is_joining = False
+#  
+#---
+#reconsider: True
+#code: |
+#  co_appellant.clear()
+#  if users.number_gathered() > 1:
+#    if anyone_joining != "none":
+#      for index, user in enumerate(users):
+#        if index != 0 and anyone_joining == user.name_full():
+#          co_appellant[0] = user.copy_deep('co_appellant[0]')
+#          #co_appellant.append(user)
+#  set_co_appellant = True
+---
+reconsider: True
+code: |
+  co_appellant_options = []
+  for index, user in enumerate(users):
+    if index != 0:
+      co_appellant_options.append({user.name_full(): user.name_full() })
+  co_appellant_options.append({"none": "No other " + party_label + " is joining the appeal"})
+---
 id: is party co appellant
 question: |
   Is ${users[i].name_full()} joining you in appealing the case?
@@ -873,20 +1031,20 @@ subquestion: |
 
   The *Notice of Appeal* form only allows you to have one co-appellant sign appeal the case with you. If you want to file an appeal with more than one co-appellant, you may want to talk with a lawyer to discuss your options. Use **[Get Legal Help](https://www.illinoislegalaid.org/get-legal-help)** to find free or low-cost legal services in your area.
 fields: 
-  - no label: users[i].co_appealing
+  - no label: users[i].is_joining
     datatype: yesnoradio
 ---
-reconsider: True
-code: |
-  co_appellant.clear()
-  have_co_appellant_set = False
-  for index, user in enumerate(users):
-    if index > 0:
-      if not have_co_appellant_set and user.co_appealing:
-        co_appellant.append(user)
-        have_co_appellant_set = True
-  co_appellant.there_is_another = False
-  set_co_appellant_object= True
+#reconsider: True
+#code: |
+#  co_appellant.clear()
+#  have_co_appellant_set = False
+#  for index, user in enumerate(users):
+#    if index > 0:
+#      if not have_co_appellant_set and user.co_appealing:
+#        co_appellant.append(user)
+#        have_co_appellant_set = True
+#  co_appellant.there_is_another = False
+#  set_co_appellant_object= True
 ---
 id: any other party
 question: |
@@ -921,7 +1079,7 @@ id: in re check
 question: |
  Does the circuit court case have the words "**In re:**" in the name?
 subquestion: |
-  Look at the name of the case at the top of the circuit court papers. "In re" is often used in probate, bankruptcy, and some family law cases. For example, a probate case regarding Jane Doe’s estate might be called “In re: Estate of Jane Doe.”
+  Look at the name of the case at the top of the circuit court papers. "In re" is often used in probate, bankruptcy, and some family law cases. For example, a probate case regarding Jane Doe’s estate might be called "In re: Estate of Jane Doe."
 fields:
   - no label: in_re_check
     datatype: yesnoradio
@@ -958,7 +1116,7 @@ content: |
 id: county
 continue button field: county
 question: |
-  In which county was the court case filed?
+  In which county was the circuit court case filed?
 subquestion: |
   The county should be listed near the top of the court papers.
 fields:
@@ -1059,11 +1217,8 @@ fields:
 reconsider: True
 code: |
   delivery_storage_list = []
-  co_appellate_found = False
   for index in range(1, users.number_gathered()):
-    if not co_appellate_found and users[index].co_appealing:
-      co_appellate_found = True
-    else:
+    if not users[index].is_joining:
       delivery_storage_list.append(users[index])
   if anyone_opposing and other_parties.number_gathered() > 0:
     delivery_parties = ALPeopleList("delivery_parties", elements = other_parties + delivery_storage_list)
@@ -1107,30 +1262,6 @@ fields:
     code: |
       name_suffix()
     required: False  
----
-id: delivery party address
-sets:
-  - x.address.address
-  - x.address.city
-  - x.address.zip
-generic object: ALIndividual
-question: |
-  % if x.is_represented:
-  What is ${ x.lawyer.name_full() }'s address?
-  % else:
-  What is ${ x.name_full() }'s address?
-  % endif
-fields:
-  - Street address: x.address.address
-    address autocomplete: True
-  - Address line 2: x.address.unit
-    required: False
-  - City: x.address.city
-  - State: x.address.state
-    code: |
-      states_list()
-    default: IL      
-  - ZIP code: x.address.zip
 ---
 id: knows delivery method
 generic object: ALIndividual
@@ -1310,6 +1441,34 @@ validation code: |
   else:
     x.knows_delivery_time = True
 ---
+id: delivery party address
+sets:
+  - x.address.address
+  - x.address.city
+  - x.address.zip
+generic object: ALIndividual
+question: |
+  % if x.is_joining:
+  What is ${ x.name_full() }'s address?
+  % else:
+  % if x.is_represented:
+  What is ${ x.lawyer.name_full() }'s address?
+  % else:
+  What is ${ x.name_full() }'s address?
+  % endif
+  % endif
+fields:
+  - Street address: x.address.address
+    address autocomplete: True
+  - Address line 2: x.address.unit
+    required: False
+  - City: x.address.city
+  - State: x.address.state
+    code: |
+      states_list()
+    default: IL      
+  - ZIP code: x.address.zip
+---
 id: hand delivery info
 continue button field: hand_delivery_info
 question: |
@@ -1432,7 +1591,7 @@ id: user e-signature
 question: |
   Do you want to add your e-signature to your forms?
 subquestion: |
-  This program can put “**/s/ ${users[0].name_full()}**” where you would sign your name. The court will accept this as your signature.
+  This program can put "**/s/ ${users[0].name_full()}**" where you would sign your name. The court will accept this as your signature.
 
   If you do not add your **{e-signature}**, you must sign your paper forms before you file and deliver them.
 
@@ -1440,8 +1599,8 @@ subquestion: |
     <h6 class="alert-heading">What it means to sign your forms</h6>
     <p>By signing your court forms you are certifying that:</p>
     <p><ul>
-      <li>Everything on the forms is true and correct, and</li>
-      <li>You understand that making a false statement on the forms is perjury, which can result in criminal penalties.</li>
+      <li>Everything in the forms is true and correct, or you have been informed or you believe it to be true and correct, and</li>
+      <li>You understand that making a false statement on the forms is perjury and has penalties provided by law.</li>
     </ul></p>
   <p>See the <a href="https://www.ilga.gov/legislation/ilcs/documents/073500050k1-109.htm"><b>Illinois Code of Civil Procedure, 735 ILCS 5/1-109</b></a> for more information.</p>
   </div>
@@ -1455,9 +1614,9 @@ terms:
 id: other signature
 continue button field: other_signature
 question: |
-  ${co_appellant[0].name_full()}'s signature
+  ${get_co_appellant().name_full()}'s signature
 subquestion: |
-  ${co_appellant[0].name_full()} will need to sign the *Notice of Appeal*. You will need to print a copy and have them sign it before you file your forms with the appellate court.
+  ${get_co_appellant().name_full()} will need to sign the *Notice of Appeal*. You will need to print a copy and have them sign it before you file your forms with the appellate court.
 ---
 id: appellate motion required
 continue button field: appellate_motion_required
@@ -1466,28 +1625,27 @@ question: |
 subquestion: |
   The main order or judgment in your *Notice of Appeal* is past the filing deadline.
 
-  To appeal the order, you must file an Appellate Motion to ask the appellate court to extend the filing deadline. If the appellate court grants your request, you can file your *Notice of Appeal* for that order.
+  To ask for more time, file a motion for leave to file a late Notice of Appeal with the appellate court within 30 days of when your *Notice of Appeal* was originally due. You must attach your *Notice of Appeal* to the motion.
 
-  This program does not make the Appellate Motion forms. Read the instructions that come with your forms to learn more. You can find [**Appellate Motions form on the Illinois Supreme Court's website**](https://www.illinoiscourts.gov/forms/approved-forms/approved-statewide-forms-appellate-forms/motion/).
+  **Note:** the appellate court does not have to give you more time to file your *Notice of Appeal*. The appellate court may dismiss your appeal if you do not have a "reasonable excuse" for filing a late Notice of Appeal. You can use the [**Appellate Motion form on the Illinois Courts' website**](https://www.illinoiscourts.gov/forms/approved-forms/approved-statewide-forms-appellate-forms/motion/) to request an extension of time.
 ---
 id: next steps
 continue button field: next_steps
 question: |
   Next steps
 subquestion: |
+  % if late_appeal:
+  <div class="alert alert-info ilao-info" role="alert">
+  <h6 class="alert-heading">Past the deadline</h6>
+  <p>The main order or judgment in your <i>Notice of Appeal</i> is past the filing deadline.</p>
+  <p>To ask for more time, file a motion for leave to file a late Notice of Appeal with the appellate court within 30 days of when your <i>Notice of Appeal</i> was originally due. You must attach your <i>Notice of Appeal</i> to the motion.</p>
+   <p>the appellate court does not have to give you more time to file your <i>Notice of Appeal</i>. The appellate court may dismiss your appeal if you do not have a "reasonable excuse" for filing a late Notice of Appeal. You can use the <a href="https://www.illinoiscourts.gov/forms/approved-forms/approved-statewide-forms-appellate-forms/motion/"><b>Appellate Motion form on the Illinois Courts' website</b></a> to request an extension of time.</p>
+   </div>
+  
+  % endif
   After you download your forms,  you will need to serve your forms to all other parties in the case and file them with the trial court that heard your case. This program **does not file** your forms for you. 
 
   You will need to file a *Docketing Statement* in the appellate court withn 14 days of filing your *Notice of Appeal*. You can find the *Docketing Statement* form and instructions at the [**Illinois Courts website**](https://www.illinoiscourts.gov/documents-and-forms/approved-forms/appellate-forms/docketing-statement/).
-
-  % if today().minus(days=30) > order_date:
-  <div class="alert alert-info ilao-info" role="alert">
-  <h6 class="alert-heading">Past the deadline</h6>
-  <p>The main order or judgment in your *Notice of Appeal* is past the filing deadline.</p>
-  <p>To appeal the order, you must file an Appellate Motion to ask the appellate court to extend the filing deadline. If the appellate court grants your request, you can file your *Notice of Appeal* for that order. </p>
-   <p>This program does not make the Appellate Motion forms. Read the instructions that come with your forms to learn more. You can find
-  [**Appellate Motions form on the Illinois Supreme Court's website**](https://www.illinoiscourts.gov/forms/approved-forms/approved-statewide-forms-appellate-forms/motion/).</p>
-   </div>
-  % endif
 ---
 id: forms assembling
 continue button field: forms_assembling
@@ -1551,8 +1709,11 @@ objects:
   - additional_delivery_bundle: ALDocumentBundle.using(elements=[], title= "Additional Proof of Delivery", filename="additional_proof_of_delivery.pdf", has_addendum=False)
 ---
 objects:
-  - al_user_bundle: ALDocumentBundle.using(elements=[instructions, notice_of_appeal, additional_delivery_bundle], filename="notice_of_appeal.pdf", title="All forms")
-  - al_court_bundle: ALDocumentBundle.using(elements=[notice_of_appeal, additional_delivery_bundle], filename="notice_of_appeal.pdf", title="Notice of Appeal")
+  - notice_bundle: ALDocumentBundle.using(elements=[notice_of_appeal, additional_delivery_bundle], filename="notice_of_appeal.pdf", title="Notice of Appeal")
+---
+objects:
+  - al_user_bundle: ALDocumentBundle.using(elements=[instructions, notice_bundle], filename="notice_of_appeal.pdf", title="All forms")
+  - al_court_bundle: ALDocumentBundle.using(elements=[notice_bundle], filename="notice_of_appeal.pdf", title="Notice of Appeal")
 ---
 reconsider: True
 code: |
@@ -1571,6 +1732,7 @@ code: |
 code: |
   instructions.enabled = True
   notice_of_appeal.enabled = True
+  notice_bundle.enabled = True
 ---
 attachment:
   variable name: instructions[i]
@@ -1625,25 +1787,25 @@ attachment:
         % endif
     - "standard_appeal": ${True if not other_appeals else False}
     - "inter_appeal": ${False}
-    - "join_appeal": ${True if joining_appeal and other_appeals else False}
-    - "separate_appeal": ${True if separate_appeal and other_appeals and not joining_appeal else False}
-    - "cross_appeal": ${True if cross_appeal and other_appeals and not joining_appeal and not separate_appeal else False}
+    - "join_appeal": ${True if other_appeals and appeal_type == "join" else False}
+    - "separate_appeal": ${True if other_appeals and appeal_type == "separate" else False}
+    - "cross_appeal": ${True if other_appeals and appeal_type == "cross" else False}
     - "appellant_1_name_1": ${users[0].name_full()}
     - "appellant_1_name_2": ${users[0].name_full()}
     - "appellant_1_name_3": ${users[0].name_full()}
-    - "appellant_2_name": ${co_appellant[0].name_full()}
-    - "appellant_2_name_2": ${co_appellant[0].name_full()}
+    - "appellant_2_name": ${get_co_appellant().name_full() if any_co_appellant() else ""}
+    - "appellant_2_name_2": ${get_co_appellant().name_full() if any_co_appellant() else ""}
     - "appellant_1_is_plaintiff": ${True if party_label == "plaintiff" else False}
     - "appellant_1_is_petitioner": ${True if party_label == "petitioner" else False}
     - "appellant_1_is_defendant": ${True if party_label == "defendant" else False}
     - "appellant_1_is_respondent": ${True if party_label == "respondent" else False}
-    - "appellant_2_is_plaintiff": ${True if party_label == "plaintiff" else False}
-    - "appellant_2_is_petitioner": ${True if party_label == "petitioner" else False}
-    - "appellant_2_is_defendant": ${True if party_label == "defendant" else False}
-    - "appellant_2_is_respondent": ${True if party_label == "respondent" else False}
+    - "appellant_2_is_plaintiff": ${True if any_co_appellant() and party_label == "plaintiff" else False}
+    - "appellant_2_is_petitioner": ${True if any_co_appellant() and party_label == "petitioner" else False}
+    - "appellant_2_is_defendant": ${True if any_co_appellant() and party_label == "defendant" else False}
+    - "appellant_2_is_respondent": ${True if any_co_appellant() and party_label == "respondent" else False}
     - "order_date_1": ${order_date}
-    - "order_date_2": ${other_orders[0].date}
-    - "order_date_3": ${other_orders[1].date}
+    - "order_date_2": ${other_orders[0].date if other_orders.there_are_any else ""}
+    - "order_date_3": ${other_orders[1].date if other_orders.there_are_any else ""}
     - "reverse": ${reverse}
     - "reverse_send_back": ${reverse_send_back if reverse else ""}
     - "vacate": ${vacate}
@@ -1665,10 +1827,10 @@ attachment:
     - "appellant_1_phone": ${phone_number_formatted(users[0].phone_number)}
     - "appellant_1_phone_2": ${phone_number_formatted(users[0].phone_number)}
     - "appellant_2_signature_1": ${""}
-    - "appellant_2_street": ${co_appellant[0].address.line_one(bare=True)}
-    - "appellant_2_csz": ${co_appellant[0].address.line_two()}
-    - "appellant_2_email": ${co_appellant[0].email}
-    - "appellant_2_phone": ${phone_number_formatted(co_appellant[0].phone_number)}
+    - "appellant_2_street": ${get_co_appellant().address.line_one(bare=True) if any_co_appellant() else ""}
+    - "appellant_2_csz": ${get_co_appellant().address.line_two() if any_co_appellant() else ""}
+    - "appellant_2_email": ${get_co_appellant().email if any_co_appellant() else ""}
+    - "appellant_2_phone": ${phone_number_formatted(get_co_appellant().phone_number) if any_co_appellant() else ""}
     - "delivery_party_1_name": |
         % if delivery_parties[0].is_represented:
         ${delivery_parties[0].lawyer.name_full()} (lawyer for ${delivery_parties[0].name_full()})
@@ -2038,21 +2200,32 @@ review:
     button: |
       **Has anyone else in the case filed an appeal?**
       ${word(yesno(other_appeals))}
-  - Edit: joining_appeal
+  - Edit: appeal_type
     button: |
-      **Are you joining someone's appeal?**
-      ${word(yesno(joining_appeal))}
+      **What type of appeal are you filing?**
+      % if appeal_type == "join":
+      A joint appeal
+      % elif appeal_type == "cross":
+      A cross appeal
+      % else:
+      A separate appeal
+      % endif
     show if: other_appeals
-  - Edit: separate_appeal
-    button: |
-      **Are you filing a separate appeal?**
-      ${word(yesno(separate_appeal))}
-    show if: other_appeals and not joining_appeal
-  - Edit: cross_appeal
-    button: |
-      **Are you filing a cross appeal?**
-      ${word(yesno(cross_appeal))}
-    show if: other_appeals and not joining_appeal and not separate_appeal
+  #- Edit: joining_appeal
+  #  button: |
+  #    **Are you joining someone's appeal?**
+  #    ${word(yesno(joining_appeal))}
+  #  show if: other_appeals
+  #- Edit: separate_appeal
+  #  button: |
+  #    **Are you filing a separate appeal?**
+  #    ${word(yesno(separate_appeal))}
+  #  show if: other_appeals and not joining_appeal
+  #- Edit: cross_appeal
+  #  button: |
+  #    **Are you filing a cross appeal?**
+  #    ${word(yesno(cross_appeal))}
+  #  show if: other_appeals and not joining_appeal and not separate_appeal
 ---
 id: case details review screen
 event: section_case
@@ -2184,15 +2357,15 @@ review:
     button: |
       **Party name:**
       ${x.name_full()}
-  - Edit: x.co_appealing
+  - Edit: x.is_joining
     button: |
       **Is ${x.name_full()} joining in your appeal?**
-      ${word(yesno(x.co_appealing))}
+      ${word(yesno(x.is_joining))}
+    show if: x != users[0]
   - Edit: x.address.address
     button: |
       **${x.name_full()}'s address:**
       ${x.address.on_one_line(bare=True)}
-    show if: x == users[0] or x.co_appealing
   - Edit: x.has_email_address
     button: |
       **${x.name_full()}'s contact info:**
@@ -2222,7 +2395,7 @@ review:
       % else:
       * Email address: None entered
       % endif
-    show if: x.co_appealing
+    show if: x != users[0]
   - Edit: x.is_represented
     button: |
       **Does ${x.name_full()} have a lawyer?**
@@ -2478,21 +2651,32 @@ review:
     button: |
       **Has anyone else in the case filed an appeal?**
       ${word(yesno(other_appeals))}
-  - Edit: joining_appeal
+  - Edit: appeal_type
     button: |
-      **Are you joining someone's appeal?**
-      ${word(yesno(joining_appeal))}
+      **What type of appeal are you filing?**
+      % if appeal_type == "join":
+      A joint appeal
+      % elif appeal_type == "cross":
+      A cross appeal
+      % else:
+      A separate appeal
+      % endif
     show if: other_appeals
-  - Edit: separate_appeal
-    button: |
-      **Are you filing a separate appeal?**
-      ${word(yesno(separate_appeal))}
-    show if: other_appeals and not joining_appeal
-  - Edit: cross_appeal
-    button: |
-      **Are you filing a cross appeal?**
-      ${word(yesno(cross_appeal))}
-    show if: other_appeals and not joining_appeal and not separate_appeal
+  #- Edit: joining_appeal
+  #  button: |
+  #    **Are you joining someone's appeal?**
+  #    ${word(yesno(joining_appeal))}
+  #  show if: other_appeals
+  #- Edit: separate_appeal
+  #  button: |
+  #    **Are you filing a separate appeal?**
+  #    ${word(yesno(separate_appeal))}
+  #  show if: other_appeals and not joining_appeal
+  #- Edit: cross_appeal
+  #  button: |
+  #    **Are you filing a cross appeal?**
+  #    ${word(yesno(cross_appeal))}
+  #  show if: other_appeals and not joining_appeal and not separate_appeal
   - note: |
       <h4>Case details and delivery</h4>
   - Edit: party_label
