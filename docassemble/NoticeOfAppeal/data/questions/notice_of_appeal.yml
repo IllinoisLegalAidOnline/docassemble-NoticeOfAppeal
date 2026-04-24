@@ -280,7 +280,7 @@ subquestion: |
 
   **Note:** You have to file your appeal before the deadline. The deadline is short, and if you miss it you may not be able to appeal at all. Usually, you need to file a *Notice of Appeal* within 30 days of the court's decision. If someone else in the case has filed a post-judgment motion, you need to file within 30 days of the court ruling on their motion. If you are appealing a temporary restraining order or the denial of one, you must file within two days.
 
-  This Easy Form will help you figure out if you are able to appeal the trial court's decision. To learn more, read ILAO's article about [**civil appeals common questions**](https://www.illinoislegalaid.org/node/184801).
+  This Easy Form will help you figure out if you are able to appeal the trial court's decision. To learn more, see ILAO's [**civil appeals FAQ**](https://www.illinoislegalaid.org/node/184801).
 ---
 id: order date
 question: |
@@ -355,7 +355,7 @@ subquestion: |
   * You ask the appellate court to extend the filing deadline, and
   * The appellate court grants your request.
 
-  To ask for more time, file a motion for leave to file a late Notice of Appeal with the appellate court within 30 days of when your *Notice of Appeal* was originally due. You must attach your *Notice of Appeal* to the motion. You can use the [**Appellate Motion form on the Illinois Courts website**](https://www.illinoiscourts.gov/forms/approved-forms/approved-statewide-forms-appellate-forms/motion/) to request an extension of time.
+  To ask for more time, file a motion for leave to file a late *Notice of Appeal* with the appellate court within 30 days of when your *Notice of Appeal* was originally due. You must attach your *Notice of Appeal* to the motion. You can use the [**Appellate Motion form on the Illinois Courts website**](https://www.illinoiscourts.gov/forms/approved-forms/approved-statewide-forms-appellate-forms/motion/) to request an extension of time.
 
   **Note:** the appellate court does not have to give you more time to file your *Notice of Appeal*. The appellate court may dismiss your appeal if you do not have a "reasonable excuse" for filing a late Notice of Appeal.
 
@@ -452,7 +452,7 @@ subquestion: |
 
   It has been ${date_difference(starting=vacate_denial_date, ending=today())} since the Motion to Vacate was denied.
 
-  You may ask for more time to file your *Notice of Appeal*. To do so, file a motion for leave to file a late Notice of Appeal with the appellate court within 30 days of when your *Notice of Appeal* was originally due. You must attach your Notice of Appeal to the motion and pay a $50 filing fee. If you cannot afford to pay the filing fee, you can ask the court to file for free or at a reduced cost by filing an Appellate Fee Waiver.
+  You may ask for more time to file your *Notice of Appeal*. To do so, file a motion for leave to file a late *Notice of Appeal* with the appellate court within 30 days of when your *Notice of Appeal* was originally due. You must attach your *Notice of Appeal* to the motion and pay a $50 filing fee. If you cannot afford to pay the filing fee, you can ask the court to file for free or at a reduced cost by filing an Appellate Fee Waiver.
 
   **Note:** the appellate court does not have to give you more time to file your *Notice of Appeal*. The appellate court may dismiss your appeal if you do not have a "reasonable excuse" for filing a late Notice of Appeal. You can use the [**Appellate Motion form on the Illinois Courts website**](https://www.illinoiscourts.gov/forms/approved-forms/approved-statewide-forms-appellate-forms/motion/) to request an extension of time.
 
@@ -486,7 +486,7 @@ subquestion: |
  
   It has been ${date_difference(starting=vacate_file_date, ending=today())} days since the Motion to Vacate was filed.
 
-  You may ask for more time to file your *Notice of Appeal*. To do so, file a motion for leave to file a late Notice of Appeal with the appellate court within 30 days of when your *Notice of Appeal* was originally due. You must attach your Notice of Appeal to the motion and pay a $50 filing fee. If you cannot afford to pay the filing fee, you can ask the court to file for free or at a reduced cost by filing an Appellate Fee Waiver.
+  You may ask for more time to file your *Notice of Appeal*. To do so, file a motion for leave to file a late *Notice of Appeal* with the appellate court within 30 days of when your *Notice of Appeal* was originally due. You must attach your *Notice of Appeal* to the motion and pay a $50 filing fee. If you cannot afford to pay the filing fee, you can ask the court to file for free or at a reduced cost by filing an Appellate Fee Waiver.
 
   **Note:** the appellate court does not have to give you more time to file your *Notice of Appeal*. The appellate court may dismiss your appeal if you do not have a "reasonable excuse" for filing a late Notice of Appeal. You can use the [**Appellate Motion form on the Illinois Courts website**](https://www.illinoiscourts.gov/forms/approved-forms/approved-statewide-forms-appellate-forms/motion/) to request an extension of time.
 
@@ -497,7 +497,7 @@ event: not_appealable
 question: |
   Sorry
 subquestion: |
-  The ${order_date} order is not eligible for appeal using this program. This program can only be used for final judgments, special findings, Rule 304 orders, temporary restraining orders, and Rule 307 orders. To learn more, read ILAO's article about [**civil appeals**](https://www.illinoislegalaid.org/node/171791).
+  The ${order_date} order is not eligible for appeal using this program. This program can only be used for final judgments, orders with special findings, Rule 304 orders, temporary restraining orders, and Rule 307 orders. To learn more, read ILAO's article about [**civil appeals**](https://www.illinoislegalaid.org/node/171791).
 
   You may want to talk with a lawyer to discuss your options. Use **[Get Legal Help](https://www.illinoislegalaid.org/get-legal-help)** to find free or low-cost legal services in your area.
 
@@ -552,7 +552,7 @@ subquestion: |
 
   It has been ${date_difference(starting=reconsider_ruling_date, ending=today())} since the Motion to Vacate was filed.
 
-  You may ask for more time to file your *Notice of Appeal*. To do so, file a motion for leave to file a late Notice of Appeal with the appellate court within 30 days of when your *Notice of Appeal* was originally due. You must attach your Notice of Appeal to the motion and pay a $50 filing fee. If you cannot afford to pay the filing fee, you can ask the court to file for free or at a reduced cost by filing an Appellate Fee Waiver.
+  You may ask for more time to file your *Notice of Appeal*. To do so, file a motion for leave to file a late *Notice of Appeal* with the appellate court within 30 days of when your *Notice of Appeal* was originally due. You must attach your *Notice of Appeal* to the motion and pay a $50 filing fee. If you cannot afford to pay the filing fee, you can ask the court to file for free or at a reduced cost by filing an Appellate Fee Waiver.
 
   **Note:** the appellate court does not have to give you more time to file your *Notice of Appeal*. The appellate court may dismiss your appeal if you do not have a "reasonable excuse" for filing a late Notice of Appeal. You can use the [**Appellate Motion form on the Illinois Courts website**](https://www.illinoiscourts.gov/forms/approved-forms/approved-statewide-forms-appellate-forms/motion/) to request an extension of time.
 
@@ -587,7 +587,7 @@ subquestion: |
   * You ask the appellate court to extend the filing deadline, and
   * The appellate court grants your request.
 
-  To ask for more time, file a motion for leave to file a late Notice of Appeal with the appellate court within 30 days of when your *Notice of Appeal* was originally due. You must attach your *Notice of Appeal* to the motion. You can use the [**Appellate Motion form on the Illinois Courts website**](https://www.illinoiscourts.gov/forms/approved-forms/approved-statewide-forms-appellate-forms/motion/) to request an extension of time.
+  To ask for more time, file a motion for leave to file a late *Notice of Appeal* with the appellate court within 30 days of when your *Notice of Appeal* was originally due. You must attach your *Notice of Appeal* to the motion. You can use the [**Appellate Motion form on the Illinois Courts website**](https://www.illinoiscourts.gov/forms/approved-forms/approved-statewide-forms-appellate-forms/motion/) to request an extension of time.
 
  **Note:** the appellate court does not have to give you more time to file your *Notice of Appeal*. The appellate court may dismiss your appeal if you do not have a "reasonable excuse" for filing a late Notice of Appeal. 
  % else:
@@ -770,19 +770,21 @@ question: |
   What type of appeal are you filing?
 subquestion: |
   Since someone else in your case has filed an appeal, you must either **join the appeal**, file a **separate appeal**, or file a **cross appeal**.
+
+  You can click the ${ fa_icon("question-circle", color_css="#0dcaf0" ) } by an option to see an example of that type of appeal.
 fields:
   - no label: appeal_type
     input type: radio
     choices:
-      - I am **joining another party's appeal**. I am adding my name to the other party's Notice of Appeal. **Click ${ fa_icon("question-circle", color_css="#0dcaf0" ) } to see an example.**: join
+      - I am **joining another party's appeal**. I am adding my name to the other party's Notice of Appeal.: join
         help: |
           With a separate appeal, you can go against the other party or appeal a different order than them.          
           For example, if two roommates are evicted and one roommate appeals the eviction, the other roommate can join the appeal.
-      - I am **filing a separate appeal**. Another party has appealed but I am not joining their appeal. **Click ${ fa_icon("question-circle", color_css="#0dcaf0" ) } to see an example.**: separate
+      - I am **filing a separate appeal**. Another party has appealed but I am not joining their appeal.: separate
         help: |
           With a separate appeal, you can go against the other party or appeal a different order than them.           
           For example, if two roommates are evicted and one roommate appeals only the eviction order, the other roommate can file a separate appeal to attack an order for past-due rent.
-      - I am **filing a cross appeal** to respond to another party's appeal or to file an appeal against a party who already filed an appeal. **Click ${ fa_icon("question-circle", color_css="#0dcaf0" ) } to see an example.**: cross
+      - I am **filing a cross appeal** to respond to another party's appeal or to file an appeal against a party who already filed an appeal.: cross
         help: |
           With a cross appeal, you can attack an order or part of an order that wrongly gave relief to the appellant.         
           For example, if a landlord gets an eviction order against a tenant but the court does not award past due rent, the tenant can appeal the eviction. The landlord can cross appeal the denial of rent.
@@ -1498,7 +1500,7 @@ subquestion: |
   <div class="alert alert-info ilao-info" role="alert">
   <h6 class="alert-heading">Past the deadline</h6>
   <p>The main order or judgment in your <i>Notice of Appeal</i> is past the filing deadline.</p>
-  <p>To ask for more time, file a motion for leave to file a late Notice of Appeal with the appellate court within 30 days of when your <i>Notice of Appeal</i> was originally due. You must attach your <i>Notice of Appeal</i> to the motion.</p>
+  <p>To ask for more time, file a motion for leave to file a late *Notice of Appeal* with the appellate court within 30 days of when your <i>Notice of Appeal</i> was originally due. You must attach your <i>Notice of Appeal</i> to the motion.</p>
    <p>The appellate court does not have to give you more time to file your <i>Notice of Appeal</i>. The appellate court may dismiss your appeal if you do not have a "reasonable excuse" for filing a late Notice of Appeal. You can use the <a href="https://www.illinoiscourts.gov/forms/approved-forms/approved-statewide-forms-appellate-forms/motion/"><b>Appellate Motion form on the Illinois Courts website</b></a> to request an extension of time.</p>
    </div>
   
