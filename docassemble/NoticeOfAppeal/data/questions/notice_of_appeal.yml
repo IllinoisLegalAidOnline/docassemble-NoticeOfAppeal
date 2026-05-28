@@ -276,7 +276,7 @@ question: |
 subquestion: |
   An appeal is a request to change a trial court's decision. A court that hears appeals is called an appellate court. An appellate court can change part of or all of a trial court's decision, make the trial court rehear the case, or grant other types of relief. 
 
-  You can start an appeal by filing a *Notice of Appeal*. If someone else in the case has filed an appeal, you can use a *Notice of Appeal* to join their appeal, file an appeal replying to their appeal, or file a separate appeal.
+  You can start an appeal by filing a *Notice of Appeal*. If someone else in the case has filed an appeal, you can use a *Notice of Appeal* to join their appeal, file a separate appeal, or file a cross-appeal.
 
   **Note:** You have to file your appeal before the deadline. The deadline is short, and if you miss it you may not be able to appeal at all. Usually, you need to file a *Notice of Appeal* within 30 days of the court's decision. If someone else in the case has filed a post-judgment motion, you need to file within 30 days of the court ruling on their motion. If you are appealing a temporary restraining order or the denial of one, you must file within two days.
 
@@ -297,6 +297,10 @@ fields:
 id: final judgment
 question: |
   Is the ${order_date} order the final judgment in your case?
+subquestion: |
+ A final judgment is ordered when the court has made a final decision and the case is over.
+
+ Sometimes a party will file a post-judgment motion, such as a Motion to Reconsider. You can still click **Yes** here even if another party has filed such a motion.
 fields:
   - no label: final_judgment
     datatype: yesnoradio
@@ -390,11 +394,11 @@ id: ex parte order
 question: |
   Was the ${order_date} order entered ex parte? 
 subquestion: |
-  The order was entered ex parte if you did not learn about it until after it was entered.
+  The order was entered ex parte if the judge made a decision and you were not given notice or a chance to be heard before the decision was made.
 
-  When you are in a court case, you must be notified before the judge orders against you. The people on the other side of the case have to give you "notice." They must tell you that they are asking the judge to do something that could affect you.
+  In most cases, the other side must notify you before asking the judge to make a decision that could affect you. This is called giving “notice.”
 
-  If you did not receive notice of the court date when this order was entered, click **Yes**.
+  If you did not receive notice of the court date or request when this order was entered, click **Yes**.
 fields:
   - no label: ex_parte_order
     datatype: yesnoradio
@@ -509,6 +513,12 @@ buttons:
 id: motion to reconsider
 question: |
   Did any party in the case file a Motion to Reconsider or a similar post-judgment motion?
+subquestion: |
+  Other types of post-judgment motions include:
+
+  * Motion for New Trial,
+  * Motion for Judgment Notwithstanding the Verdict, or
+  * Motion to Vacate
 fields:
   - no label: motion_to_reconsider
     datatype: yesnoradio
@@ -648,11 +658,11 @@ code: |
 ---
 id: other orders there are any
 question: |
-  Do you want to add more orders to your appeal?
+  Are there earlier court orders from the case that you also want to appeal?
 subquestion: |
-  You can add up to two additional orders to your *Notice of Appeal*.
+  Sometimes, when you appeal a final judgment or order, you can also include earlier orders the judge made in the same case. For example, the judge may have made a decision earlier in the case about what evidence could be used at trial. If that decision affected the final judgment, you may want to include that earlier order in your appeal.
   
-  Additional orders can only be added if they led to the ${order_date} order or judgment. This means they must have been part of the same case and touch on some of the same issues as the ${order_date} order or judgment.
+  You can add up to two earlier orders that are elated to the ${order_date} order or judgment. orders to your *Notice of Appeal*.
 fields:
   - no label: other_orders.there_are_any
     datatype: yesnoradio
@@ -778,7 +788,8 @@ fields:
     choices:
       - I am **joining another party's appeal**. I am adding my name to the other party's Notice of Appeal.: join
         help: |
-          With a separate appeal, you can go against the other party or appeal a different order than them.          
+          With a joint appeal, you can join a party in an appeal their appeal.        
+          
           For example, if two roommates are evicted and one roommate appeals the eviction, the other roommate can join the appeal.
       - I am **filing a separate appeal**. Another party has appealed but I am not joining their appeal.: separate
         help: |
@@ -1059,7 +1070,7 @@ id: trial court judge name
 question: |
   Who is the circuit court judge who issued the order being appealed?
 subquestion: |
-  The judge's name is listed on the court order that is being appealed. You can also call the **{circuit court clerk}** to ask for the judge's name.
+  The judge's name is listed on the court order that is being appealed. You can also call the **{circuit court clerk}** to ask for the judge's name. You can find the circuit court clerk's phone number on the [**Illinois Courts website**](https://www.illinoiscourts.gov/courts/circuit-court/circuit-court-clerks/).
   
   You do not need to enter the judge's full name. You are only required to enter the judge's last name.  
 fields:
@@ -1069,7 +1080,7 @@ fields:
     required: False
   - Last: judge.name.last
 terms:
-  circuit clerk: |
+  circuit court clerk: |
     The office that takes care of files and documents for circuit court cases.
 ---
 id: appellate district
@@ -1642,7 +1653,7 @@ attachment:
         301
         % elif special_findings or special_type:
         304
-        % elif rule_307_order:
+        % elif is_tro or rule_307_order:
         307
         % else:
         301
