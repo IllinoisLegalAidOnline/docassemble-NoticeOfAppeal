@@ -278,7 +278,7 @@ subquestion: |
 
   You can start an appeal by filing a *Notice of Appeal*. If someone else in the case has filed an appeal, you can use a *Notice of Appeal* to join their appeal, file a separate appeal, or file a cross-appeal.
 
-  **Note:** You have to file your appeal before the deadline. The deadline is short, and if you miss it you may not be able to appeal at all. Usually, you need to file a *Notice of Appeal* within 30 days of the court's decision. If someone else in the case has filed a post-judgment motion, you need to file within 30 days of the court ruling on their motion. If you are appealing a temporary restraining order or the denial of one, you must file within two days.
+  **Note:** You have to file your appeal before the deadline. The deadline is short, and if you miss it you may not be able to appeal at all. Usually, you need to file a *Notice of Appeal* within 30 days of the court's decision. If someone else in the case has filed a post-judgment motion, you need to file within 30 days of the court ruling on their motion. If you are appealing a temporary restraining order (TRO) or the denial of one, you must file **within two days**.
 
   This Easy Form will help you figure out if you are able to appeal the trial court's decision. To learn more, see ILAO's [**civil appeals FAQ**](https://www.illinoislegalaid.org/node/184801).
 ---
@@ -298,7 +298,7 @@ id: final judgment
 question: |
   Is the ${order_date} order the final judgment in your case?
 subquestion: |
- A final judgment is ordered when the court has made a final decision and the case is over.
+ A final judgment is ordered when the judge has made a final decision and the case is over.
 
  Sometimes a party will file a post-judgment motion, such as a Motion to Reconsider. You can still click **Yes** here even if another party has filed such a motion.
 fields:
@@ -396,7 +396,7 @@ question: |
 subquestion: |
   The order was entered ex parte if the judge made a decision and you were not given notice or a chance to be heard before the decision was made.
 
-  In most cases, the other side must notify you before asking the judge to make a decision that could affect you. This is called giving “notice.”
+  In most cases, the other side must notify you before asking the judge to make a decision that could affect you. This is called giving "notice."
 
   If you did not receive notice of the court date or request when this order was entered, click **Yes**.
 fields:
@@ -516,9 +516,9 @@ question: |
 subquestion: |
   Other types of post-judgment motions include:
 
-  * Motion for New Trial,
-  * Motion for Judgment Notwithstanding the Verdict, or
-  * Motion to Vacate
+  * Motion to Reconsider,
+  * Motion to Enforce, or
+  * Motion to Modify
 fields:
   - no label: motion_to_reconsider
     datatype: yesnoradio
@@ -660,7 +660,7 @@ id: other orders there are any
 question: |
   Are there earlier court orders from the case that you also want to appeal?
 subquestion: |
-  Sometimes, when you appeal a final judgment or order, you can also include earlier orders the judge made in the same case. For example, the judge may have made a decision earlier in the case about what evidence could be used at trial. If that decision affected the final judgment, you may want to include that earlier order in your appeal.
+  Sometimes, when you appeal an order, you can also include earlier orders the judge made in the same case. For example, the judge may have made a decision earlier in the case about what evidence could be used at trial. If that decision affected the order you are appealing, you may want to include that earlier order in your appeal.
   
   You can add up to two earlier orders that are elated to the ${order_date} order or judgment. orders to your *Notice of Appeal*.
 fields:
