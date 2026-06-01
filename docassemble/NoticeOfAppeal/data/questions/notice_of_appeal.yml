@@ -788,7 +788,7 @@ fields:
     choices:
       - I am **joining another party's appeal**. I am adding my name to the other party's Notice of Appeal.: join
         help: |
-          With a joint appeal, you can join a party in an appeal their appeal.        
+          With a joint appeal, you can join a party in their appeal.        
           
           For example, if two roommates are evicted and one roommate appeals the eviction, the other roommate can join the appeal.
       - I am **filing a separate appeal**. Another party has appealed but I am not joining their appeal.: separate
