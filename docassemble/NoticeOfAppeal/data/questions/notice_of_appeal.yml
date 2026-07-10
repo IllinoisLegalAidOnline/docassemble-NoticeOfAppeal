@@ -279,7 +279,7 @@ subquestion: |
 
   You can start an appeal by filing a *Notice of Appeal*. If someone else in the case has filed an appeal, you can use a *Notice of Appeal* to join their appeal, file a separate appeal, or file a cross-appeal.
 
-  If the trial court's decision was a **{default judgment}**, you should not file an appeal. If you want to file a *Motion to Vacate Default Judgment*, use ILAO's [**Vacate default judgment within 30 days Easy Form**](https://www.illinoislegalaid.org/node/30866).
+  **Note:** If the trial court's decision was a **{default judgment}**, you should not file an appeal. If you want to file a *Motion to Vacate Default Judgment*, use ILAO's [**Vacate default judgment within 30 days Easy Form**](https://www.illinoislegalaid.org/node/30866).
 
   This Easy Form will help you figure out if you are able to appeal the trial court's decision. To learn more, see ILAO's [**civil appeals FAQ**](https://www.illinoislegalaid.org/node/184801).
 terms:
@@ -384,11 +384,11 @@ subquestion: |
 ---
 template: prelim_help
 subject: |
-  **Appealing a preliminary injunction**
+  **Important note about TROs and preliminary injunctions**
 content: |
   If you also want to appeal a preliminary injunction, that appeal has a 30 day deadline. If you want to appeal just the preliminary injunction, click **Back** and pick **No** for the previous question.
 
-  If the preliminary injunction was ordered on a different date than the TRO, you can use the review screen to change your answer by clicking the **Trial court order** button.
+  If the preliminary injunction was ordered on a different date than the TRO, you can use the review screen to change your answer by clicking the **:edit: Edit answers** button or **Trial court order** button.
 ---
 id: rule 307 order
 question: |
@@ -598,9 +598,11 @@ event: too_late
 question: |
   Sorry
 subquestion: |
-  Too much time has passed for you to appeal the order. You can only file an appeal after the deadline by filing a motion for leave to file a late *Notice of Appeal* within 30 days of the deadline. 
+  Too much time has passed for you to appeal the order. You can only file an appeal after the deadline by filing a motion to extend time within 30 days of the deadline. 
   
   If you would like to ask the court for more time to file an appeal, you can use ILAO's [**Motion to continue or extend time Easy Form**](https://www.illinoislegalaid.org/node/30881). 
+
+  **Note:** the appellate court does not have to give you more time to file your *Notice of Appeal*. The appellate court may dismiss your appeal if you do not have a "reasonable excuse" for filing a late Notice of Appeal.
   
   You may want to talk with a lawyer to discuss your options. Use **[Get Legal Help](https://www.illinoislegalaid.org/get-legal-help)** to find free or low-cost legal services in your area.
 
@@ -1529,7 +1531,7 @@ question: |
 subquestion: |
   ${get_co_appellant().name_full()} will need to sign the *Notice of Appeal*. You will need to print a copy and have them sign it before you file your forms with the appellate court.
 
-  If ${get_co_appellant().name_full()} changes their mind and does not sign the *Notice of Appeal*, you will need to send them a copy.
+  If ${get_co_appellant().name_full()} changes their mind and does not sign the *Notice of Appeal*, you will need to send them a copy and complete a *Proof of Delivery* for them.
 ---
 id: next steps
 continue button field: next_steps
@@ -1549,7 +1551,7 @@ subquestion: |
 
   You will need to file a *Docketing Statement* in the appellate court withn 14 days of filing your *Notice of Appeal*. You can find the *Docketing Statement* form and instructions at the [**Illinois Courts website**](https://www.illinoiscourts.gov/documents-and-forms/approved-forms/appellate-forms/docketing-statement/).
 
-  You may want to ask the appellate court for a *Report of Proceedings*. You can find the *Request for Report of Proceedings* form and instructions at the [**Illinois Courts website**](https://www.illinoiscourts.gov/documents-and-forms/approved-forms/appellate-forms/request-for-report-of-proceedings/).
+  You may want to ask the trial court for a *Report of Proceedings*. You can find the *Request for Report of Proceedings* form and instructions at the [**Illinois Courts website**](https://www.illinoiscourts.gov/documents-and-forms/approved-forms/appellate-forms/request-for-report-of-proceedings/).
 ---
 id: forms assembling
 continue button field: forms_assembling
