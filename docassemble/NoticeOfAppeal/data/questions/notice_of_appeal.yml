@@ -178,10 +178,10 @@ code: |
 ---
 code: |
   def get_co_appellant():
-    if getattr(user, 'is_joining', False):
-      return user
-    else:
-      return None
+    for user in users[1:]:
+      if getattr(user, 'is_joining', False):
+        return user
+    return None
 ---
 code: |
   #other parties gather loop
@@ -245,8 +245,8 @@ subquestion: |
   To use this program you will need: 
 
   * A copy of each order you want to appeal,
-  * Names and addresses of any other parties in the case,
-  * Names and addresses of any other parties' lawyers, if any, and
+  * Name and address of any other parties in the case,
+  * Name and address of any other parties' lawyers, if any, and
   * Information about other appeals filed in the case, if any.
 
   Set aside 10 to 20 minutes to finish this program. You can log in and save your work to continue later. 
@@ -367,7 +367,7 @@ subquestion: |
 
   To ask for more time, file a motion for leave to file a late *Notice of Appeal* with the appellate court within 30 days of when your *Notice of Appeal* was originally due. You must attach your *Notice of Appeal* to the motion. You can use the [**Appellate Motion form on the Illinois Courts website**](https://www.illinoiscourts.gov/forms/approved-forms/approved-statewide-forms-appellate-forms/motion/) to request an extension of time.
 
-  **Note:** the appellate court does not have to give you more time to file your *Notice of Appeal*. The appellate court may dismiss your appeal if you do not have a "reasonable excuse" for filing a late Notice of Appeal.
+  **Note:** The appellate court does not have to give you more time to file your *Notice of Appeal*. The appellate court may dismiss your appeal if you do not have a "reasonable excuse" for filing a late Notice of Appeal.
 
   ${collapse_template(prelim_help)}
 
@@ -379,7 +379,7 @@ subject: |
 content: |
   If you also want to appeal a preliminary injunction, that appeal has a 30 day deadline. If you want to appeal just the preliminary injunction, click **Back** and pick **No** for the previous question.
 
-  If the preliminary injunction was ordered on a different date than the TRO, you can use the review screen to change your answer by clicking the **Trial court order** or **:edit: Edit answers** button.
+  If the preliminary injunction was ordered on a different date than the TRO, you can use the review screen to change your answer by clicking **Trial court order** or the **:edit: Edit answers** button.
 ---
 id: rule 307 order
 question: |
@@ -474,7 +474,7 @@ subquestion: |
 
   You may ask for more time to file your *Notice of Appeal*. To do so, file a motion for leave to file a late *Notice of Appeal* with the appellate court within 30 days of when your *Notice of Appeal* was originally due. You must attach your *Notice of Appeal* to the motion and pay a $50 filing fee. If you cannot afford to pay the filing fee, you can ask the court to file for free or at a reduced cost by filing an Appellate Fee Waiver.
 
-  **Note:** the appellate court does not have to give you more time to file your *Notice of Appeal*. The appellate court may dismiss your appeal if you do not have a "reasonable excuse" for filing a late Notice of Appeal. You can use the [**Appellate Motion form on the Illinois Courts website**](https://www.illinoiscourts.gov/forms/approved-forms/approved-statewide-forms-appellate-forms/motion/) to request an extension of time.
+  **Note:** The appellate court does not have to give you more time to file your *Notice of Appeal*. The appellate court may dismiss your appeal if you do not have a "reasonable excuse" for filing a late Notice of Appeal. You can use the [**Appellate Motion form on the Illinois Courts website**](https://www.illinoiscourts.gov/forms/approved-forms/approved-statewide-forms-appellate-forms/motion/) to request an extension of time.
 
   Click **Back** if you made a mistake, or **Next** to keep going.
 ---
@@ -506,9 +506,9 @@ subquestion: |
  
   It has been ${date_difference(starting=vacate_file_date, ending=today())} days since the Motion to Vacate was filed.
 
-  You may ask for more time to file your *Notice of Appeal*. To do so, file a motion for leave to file a late *Notice of Appeal* with the appellate court within 30 days of when your *Notice of Appeal* was originally due. You must attach your *Notice of Appeal* to the motion and pay a $50 filing fee. If you cannot afford to pay the filing fee, you can ask the court to file for free or at a reduced cost by filing an Appellate Fee Waiver.
+  You may ask for more time to file your *Notice of Appeal*.  You can only file a *Notice of Appeal* after the deadline by filing a *Motion to Continue or Extend Time* within 30 days of the deadline. You must attach your *Notice of Appeal* to the motion and pay a $50 filing fee. If you cannot afford to pay the filing fee, you can ask the court to file for free or at a reduced cost by filing an Appellate Fee Waiver.
 
-  **Note:** the appellate court does not have to give you more time to file your *Notice of Appeal*. The appellate court may dismiss your appeal if you do not have a "reasonable excuse" for filing a late Notice of Appeal. You can use the [**Appellate Motion form on the Illinois Courts website**](https://www.illinoiscourts.gov/forms/approved-forms/approved-statewide-forms-appellate-forms/motion/) to request an extension of time.
+  **Note:** The appellate court does not have to give you more time to file your *Notice of Appeal*. The appellate court may dismiss your appeal if you do not have a "reasonable excuse" for filing a late Notice of Appeal. You can use the [**Appellate Motion form on the Illinois Courts website**](https://www.illinoiscourts.gov/forms/approved-forms/approved-statewide-forms-appellate-forms/motion/) to request an extension of time.
 
   Click **Back** if you made a mistake, or **Next** to keep going.
 ---
@@ -580,7 +580,7 @@ subquestion: |
 
   You may ask for more time to file your *Notice of Appeal*. To do so, file a motion for leave to file a late *Notice of Appeal* with the appellate court within 30 days of when your *Notice of Appeal* was originally due. You must attach your *Notice of Appeal* to the motion and pay a $50 filing fee. If you cannot afford to pay the filing fee, you can ask the court to file for free or at a reduced cost by filing an Appellate Fee Waiver.
 
-  **Note:** the appellate court does not have to give you more time to file your *Notice of Appeal*. The appellate court may dismiss your appeal if you do not have a "reasonable excuse" for filing a late Notice of Appeal. You can use the [**Appellate Motion form on the Illinois Courts website**](https://www.illinoiscourts.gov/forms/approved-forms/approved-statewide-forms-appellate-forms/motion/) to request an extension of time.
+  **Note:** The appellate court does not have to give you more time to file your *Notice of Appeal*. The appellate court may dismiss your appeal if you do not have a "reasonable excuse" for filing a late Notice of Appeal. You can use the [**Appellate Motion form on the Illinois Courts website**](https://www.illinoiscourts.gov/forms/approved-forms/approved-statewide-forms-appellate-forms/motion/) to request an extension of time.
 
   Click **Back** if you made a mistake, or **Next** to keep going.
 ---
@@ -593,7 +593,7 @@ subquestion: |
   
   If you would like to ask the court for more time to file an appeal, you can use ILAO's [**Motion to continue or extend time Easy Form**](https://www.illinoislegalaid.org/node/30881). 
 
-  **Note:** the appellate court does not have to give you more time to file your *Notice of Appeal*. The appellate court may dismiss your appeal if you do not have a "reasonable excuse" for filing a late Notice of Appeal.
+  **Note:** The appellate court does not have to give you more time to file your *Notice of Appeal*. The appellate court may dismiss your appeal if you do not have a "reasonable excuse" for filing a late Notice of Appeal.
   
   You may want to talk with a lawyer to discuss your options. Use **[Get Legal Help](https://www.illinoislegalaid.org/get-legal-help)** to find free or low-cost legal services in your area.
 
@@ -619,7 +619,7 @@ subquestion: |
 
   To ask for more time, file a motion for leave to file a late *Notice of Appeal* with the appellate court within 30 days of when your *Notice of Appeal* was originally due. You must attach your *Notice of Appeal* to the motion. You can use the [**Appellate Motion form on the Illinois Courts website**](https://www.illinoiscourts.gov/forms/approved-forms/approved-statewide-forms-appellate-forms/motion/) to request an extension of time.
 
- **Note:** the appellate court does not have to give you more time to file your *Notice of Appeal*. The appellate court may dismiss your appeal if you do not have a "reasonable excuse" for filing a late Notice of Appeal. 
+ **Note:** The appellate court does not have to give you more time to file your *Notice of Appeal*. The appellate court may dismiss your appeal if you do not have a "reasonable excuse" for filing a late Notice of Appeal. 
  % else:
   The ${order_date} order can be appealed.
  % endif
@@ -943,7 +943,7 @@ question: |
 subquestion: |
   If ${users[i].name_full()} wants the same relief as you, they can join your appeal. If you click **Yes**, they will have to sign your *Notice of Appeal*.
 
-  **Note:** if a co-party has already filed an appeal, they cannot join your appeal.
+  **Note:** If a co-party has already filed an appeal, they cannot join your appeal.
 
   The *Notice of Appeal* form only allows you to have one co-appellant sign the appeal with you. If you want to file an appeal with more than one co-appellant, you may want to talk with a lawyer to discuss your options. Use **[Get Legal Help](https://www.illinoislegalaid.org/get-legal-help)** to find free or low-cost legal services in your area.
 fields: 
@@ -1198,10 +1198,10 @@ content: |
   
   * The court's **{e-filing system}**,
   * Email,
-  * U.S. mail or a delivery company (like UPS or FedEx), or
+  * US mail or a delivery company (like UPS or FedEx), or
   * Hand delivery to the party, the party's family member over 13 at their residence, the party's lawyer, or their lawyer's office.
 
-  If the other party listed an email address on the court documents, you must send the forms to them by email or through the e-filing system. You may use U.S. mail, a delivery company, or hand delivery if you or the other party **do not** have an email address.
+  If the other party listed an email address on the court documents, you must send the forms to them by email or through the e-filing system. You may use US mail, a delivery company, or hand delivery if you or the other party **does not** have an email address.
   
   If you are in a prison or jail, you can deliver by mail.
 terms:
@@ -1217,7 +1217,7 @@ question: |
   How will you send your forms to ${ x.name_full() }?
   % endif
 subquestion: |  
-  If the other party listed an email address on the court documents, you must send the forms to them by email or through the e-filing system. You may use U.S. mail or a delivery company, or hand delivery if you or the other party **does not** have an email address. If you are in a prison or jail, you can deliver by mail.
+  If the other party listed an email address on the court documents, you must send the forms to them by email or through the e-filing system. You may use US mail or a delivery company, or hand delivery if you or the other party **does not** have an email address. If you are in a prison or jail, you can deliver by mail.
 
   For best results, complete the Proof of Delivery section and send the forms today.
 
@@ -1236,7 +1236,7 @@ fields:
     js show if: 
       val("x.email_delivery") == true || val("x.efm_delivery") == true
     required: False
-  - "U.S. mail, a delivery company (like UPS or FedEx), or in-person by hand delivery": x.physical_delivery
+  - "US mail, a delivery company (like UPS or FedEx), or in-person by hand delivery": x.physical_delivery
     datatype: yesnowide
   - note: |
       Where will you deliver the paper forms to?
@@ -1269,7 +1269,7 @@ fields:
       How will you deliver the paper forms? **Choose an option below.**  
     js show if: 
       val("x.physical_delivery") == true
-  - I will send by **U.S. mail or a delivery company** (like UPS or FedEx).: x.mail_delivery
+  - I will send by **US mail or a delivery company** (like UPS or FedEx).: x.mail_delivery
     datatype: yesnowide
     js show if:
       val("x.physical_delivery") == true
@@ -2321,7 +2321,7 @@ review:
       % endif
       % if x.physical_delivery == True:
       % if x.mail_delivery == True:
-        * U.S. mail or delivery company
+        * US mail or delivery company
       % endif
       % endif
       % if x.physical_delivery == True:
