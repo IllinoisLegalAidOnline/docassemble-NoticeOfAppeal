@@ -14,7 +14,6 @@ objects:
   - users: ALPeopleList.using(there_are_any=True, complete_attribute=['complete'])
   - other_parties: ALPeopleList.using(there_are_any=True, complete_attribute=['complete'])
   - court_list: ALCourtLoader.using(file_name='docassemble.ILAO:data/sources/il_courts.xlsx')
-  - co_appellant: ALPeopleList.using(there_are_any=True)
   - other_orders: ALPeopleList.using(complete_attribute=['complete'])
   - judge: ALIndividual
   - users[i].lawyer: ALIndividual
@@ -168,14 +167,6 @@ code: |
     users[i].is_joining
   users[i].complete = True
 ---
-id: basic debug
-continue button field: basic_debug
-question: |
-  Debug
-subquestion: |
-  Hello
-
----
 code: |
   def any_co_appellant():
     if users.number_gathered() > 1:
@@ -187,10 +178,10 @@ code: |
 ---
 code: |
   def get_co_appellant():
-    for user in users[1:]:
-      if user.is_joining:
-        return user
-    #return "none"
+    if getattr(user, 'is_joining', False):
+      return user
+    else:
+      return None
 ---
 code: |
   #other parties gather loop
@@ -254,9 +245,9 @@ subquestion: |
   To use this program you will need: 
 
   * A copy of each order you want to appeal,
-  * Name and address of any other parties in the case,
-  * Name and address of any other parties' lawyers, if any, and
-  * To know if any other appeals have already been filed in the case.
+  * Names and addresses of any other parties in the case,
+  * Names and addresses of any other parties' lawyers, if any, and
+  * Information about other appeals filed in the case, if any.
 
   Set aside 10 to 20 minutes to finish this program. You can log in and save your work to continue later. 
  
@@ -324,7 +315,7 @@ id: special findings
 question: |
   Does the ${order_date} order include "special findings" that can be appealed right away?
 subquestion: |
-  Some orders can be appealed that affect only part of the case. These orders have "special findings" that say "there is no just reason for delaying either enforcement or appeal or both."
+  Some orders that affect only part of the case can be appealed. These orders have "special findings" that say "there is no just reason for delaying either enforcement or appeal or both."
 
   Supreme Court Rule 304(a) lets you appeal orders that have "special findings." These orders will say, "there is no just reason for delaying either enforcement or appeal or both."
 fields:
@@ -388,7 +379,7 @@ subject: |
 content: |
   If you also want to appeal a preliminary injunction, that appeal has a 30 day deadline. If you want to appeal just the preliminary injunction, click **Back** and pick **No** for the previous question.
 
-  If the preliminary injunction was ordered on a different date than the TRO, you can use the review screen to change your answer by clicking the **:edit: Edit answers** button or **Trial court order** button.
+  If the preliminary injunction was ordered on a different date than the TRO, you can use the review screen to change your answer by clicking the **Trial court order** or **:edit: Edit answers** button.
 ---
 id: rule 307 order
 question: |
@@ -409,7 +400,7 @@ content: |
 
   * Terminate parental rights or grant, deny, or revoke temporary commitment in adoption proceedings,
   * Grant or change an injunction,
-  *  Appoint or refuse to appoint a receiver or sequestrator,
+  * Appoint or refuse to appoint a receiver or sequestrator,
   * Give or refuse to give other or further powers or property to a receiver or sequestrator already appointed,
   * Place or refuse to place a mortgagee in possession of mortgaged premises,
   * Appoint or refuse to appoint a receiver, liquidator, rehabilitator, or other similar officer for a bank, savings and loan association, currency exchange, insurance company, or other financial institution, or grant or refuse to grant custody of the institution or require turnover of any of its assets, or
@@ -571,7 +562,7 @@ event: ruling_pending_kickout
 question: |
   Sorry
 subquestion: |
-  The ${order_date} order cannot be appealed until the court rules on the Motion to Reconsider or other post-judgment motion. Once enough the court has ruled on it, you can come back and use this program again.
+  The ${order_date} order cannot be appealed until the court rules on the Motion to Reconsider or other post-judgment motion. Once the court has ruled on it, you can come back and use this program again.
 
   If you made a mistake, you can click the **Back** button or **Restart** the program.
 buttons:
@@ -598,7 +589,7 @@ event: too_late
 question: |
   Sorry
 subquestion: |
-  Too much time has passed for you to appeal the order. You can only file an appeal after the deadline by filing a motion to extend time within 30 days of the deadline. 
+  Too much time has passed for you to appeal the order. You can only file a *Notice of Appeal* after the deadline by filing a *Motion to Continue or Extend Time* within 30 days of the deadline.
   
   If you would like to ask the court for more time to file an appeal, you can use ILAO's [**Motion to continue or extend time Easy Form**](https://www.illinoislegalaid.org/node/30881). 
 
@@ -950,11 +941,11 @@ id: is party co appellant
 question: |
   Is ${users[i].name_full()} joining you in appealing the case?
 subquestion: |
-  If a ${users[i].name_full()}  wants the same relief as you, they can join your appeal. If you click **Yes**,  they will have to sign your *Notice of Appeal*.
+  If ${users[i].name_full()} wants the same relief as you, they can join your appeal. If you click **Yes**, they will have to sign your *Notice of Appeal*.
 
   **Note:** if a co-party has already filed an appeal, they cannot join your appeal.
 
-  The *Notice of Appeal* form only allows you to have one co-appellant sign the appeal the case with you. If you want to file an appeal with more than one co-appellant, you may want to talk with a lawyer to discuss your options. Use **[Get Legal Help](https://www.illinoislegalaid.org/get-legal-help)** to find free or low-cost legal services in your area.
+  The *Notice of Appeal* form only allows you to have one co-appellant sign the appeal with you. If you want to file an appeal with more than one co-appellant, you may want to talk with a lawyer to discuss your options. Use **[Get Legal Help](https://www.illinoislegalaid.org/get-legal-help)** to find free or low-cost legal services in your area.
 fields: 
   - no label: users[i].is_joining
     datatype: yesnoradio
@@ -1207,10 +1198,10 @@ content: |
   
   * The court's **{e-filing system}**,
   * Email,
-  * US mail or a delivery company (like UPS or FedEx), or
+  * U.S. mail or a delivery company (like UPS or FedEx), or
   * Hand delivery to the party, the party's family member over 13 at their residence, the party's lawyer, or their lawyer's office.
 
-  If the other party listed an email address on the court documents, you must send the forms to them by email or through the e-filing system. You may use US mail or a delivery company, or hand delivery if you or the other party **does not** have an email address.
+  If the other party listed an email address on the court documents, you must send the forms to them by email or through the e-filing system. You may use U.S. mail, a delivery company, or hand delivery if you or the other party **do not** have an email address.
   
   If you are in a prison or jail, you can deliver by mail.
 terms:
@@ -1226,7 +1217,7 @@ question: |
   How will you send your forms to ${ x.name_full() }?
   % endif
 subquestion: |  
-  If the other party listed an email address on the court documents, you must send the forms to them by email or through the e-filing system. You may use US mail or a delivery company, or hand delivery if you or the other party **does not** have an email address. If you are in a prison or jail, you can deliver by mail.
+  If the other party listed an email address on the court documents, you must send the forms to them by email or through the e-filing system. You may use U.S. mail or a delivery company, or hand delivery if you or the other party **does not** have an email address. If you are in a prison or jail, you can deliver by mail.
 
   For best results, complete the Proof of Delivery section and send the forms today.
 
@@ -1245,7 +1236,7 @@ fields:
     js show if: 
       val("x.email_delivery") == true || val("x.efm_delivery") == true
     required: False
-  - "US mail, a delivery company (like UPS or FedEX), or in-person by hand-delivery": x.physical_delivery
+  - "U.S. mail, a delivery company (like UPS or FedEx), or in-person by hand delivery": x.physical_delivery
     datatype: yesnowide
   - note: |
       Where will you deliver the paper forms to?
@@ -1278,7 +1269,7 @@ fields:
       How will you deliver the paper forms? **Choose an option below.**  
     js show if: 
       val("x.physical_delivery") == true
-  - I will send by **US mail or a delivery company** (like UPS or FedEx).: x.mail_delivery
+  - I will send by **U.S. mail or a delivery company** (like UPS or FedEx).: x.mail_delivery
     datatype: yesnowide
     js show if:
       val("x.physical_delivery") == true
@@ -1299,7 +1290,7 @@ fields:
     js show if: 
       val("x.physical_delivery") == true && val("x.mail_delivery") == true
     required: False
-  - "I will **hand-deliver** paper forms. **Note:** You can only deliver to the party, the party's family member over 13 at their residence, the party's lawyer, or their lawyer's office.": x.hand_delivery
+  - "I will **hand deliver** paper forms. **Note:** You can only deliver to the party, the party's family member over 13 at their residence, the party's lawyer, or their lawyer's office.": x.hand_delivery
     datatype: yesnowide
     js show if: 
       val("x.physical_delivery") == true      
@@ -1393,8 +1384,8 @@ subquestion: |
 
   **Instructions when delivering your forms by hand:**
 
-  * If a party in your case does not have a lawyer, you can hand-deliver the forms to them or to a family member who is 13 or older at their home.
-  * If they do have a lawyer, you can hand-deliver the forms to the lawyer or to the lawyer's office.
+  * If a party in your case does not have a lawyer, you can hand deliver the forms to them or to a family member who is 13 or older at their home.
+  * If they do have a lawyer, you can hand deliver the forms to the lawyer or to the lawyer's office.
 ---
 id: users address
 question: |
@@ -1481,9 +1472,9 @@ fields:
     datatype: yesnoradio
   - note: |
       This email address will appear on your court forms. Be sure to check 
-      this email daily, otherwise you may miss important information about 
+      this email daily, or you may miss important information about 
       your case.
-    show if: x.has_email_address      
+    show if: users[0].has_email_address      
   - Email address: users[0].email    
     datatype: email
     show if: 
@@ -1492,7 +1483,7 @@ fields:
 validation code: |
   if (not showifdef('users[0].phone_number') and \
       (users[0].has_email_address == False)):
-    validation_error(word("You need to provide at least one contact method."), field="users[0].other_contact_method")
+    validation_error(word("You need to provide at least one contact method."), field="users[0].has_email_address")
 ---
 template: contact_info_help
 subject: |
@@ -1547,9 +1538,9 @@ subquestion: |
    </div>
   
   % endif
-  After you download your forms,  you will need to serve your forms to all other parties in the case and file them with the trial court that heard your case. This program **does not file** your forms for you. 
+  After you download your forms, you will need to serve your forms to all other parties in the case and file them with the trial court that heard your case. This program **does not file** your forms for you. 
 
-  You will need to file a *Docketing Statement* in the appellate court withn 14 days of filing your *Notice of Appeal*. You can find the *Docketing Statement* form and instructions at the [**Illinois Courts website**](https://www.illinoiscourts.gov/documents-and-forms/approved-forms/appellate-forms/docketing-statement/).
+  You will need to file a *Docketing Statement* in the appellate court within 14 days of filing your *Notice of Appeal*. You can find the *Docketing Statement* form and instructions at the [**Illinois Courts website**](https://www.illinoiscourts.gov/documents-and-forms/approved-forms/appellate-forms/docketing-statement/).
 
   You may want to ask the trial court for a *Report of Proceedings*. You can find the *Request for Report of Proceedings* form and instructions at the [**Illinois Courts website**](https://www.illinoiscourts.gov/documents-and-forms/approved-forms/appellate-forms/request-for-report-of-proceedings/).
 ---
@@ -2330,7 +2321,7 @@ review:
       % endif
       % if x.physical_delivery == True:
       % if x.mail_delivery == True:
-        * US mail or delivery company
+        * U.S. mail or delivery company
       % endif
       % endif
       % if x.physical_delivery == True:
