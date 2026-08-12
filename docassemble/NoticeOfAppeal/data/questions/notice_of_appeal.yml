@@ -18,6 +18,9 @@ objects:
   - judge: ALIndividual
   - users[i].lawyer: ALIndividual
   - other_parties[i].lawyer: ALIndividual
+  - users[i].jail_delivery_address: ALAddress
+  - other_parties[i].jail_delivery_address: ALAddress
+  - appellant_jail_address: ALAddress
 ---
 code: |
   ilao_easy_form_title = "Notice of Appeal"
@@ -133,10 +136,18 @@ code: |
         person.delivery_date
     hand_delivery_info   
   set_progress(80)
+  if can_paper_file:
+    if in_jail:
+      jail_name
+    else: 
+      send_from_location
+    send_from_date
 
   nav.set_section('section_user')
+  
   users[0].address.address
   users[0].has_email_address
+
   e_signature
   if any_co_appellant():
     other_signature
@@ -157,6 +168,23 @@ code: |
     other_orders.there_is_another = False
   other_orders[i].complete = True
 ---
+code: |
+  def paper_filing_option():
+    if users[0].has_email_address:
+      return False
+    for party in delivery_parties:
+      if party.knows_delivery_method and (party.email_delivery or party.efm_delivery):
+        return False
+    return True
+---
+#Does not use reconsider or depends on. Instead, paper_filing_block
+code: |
+  if paper_filing_option():
+    paper_filing_review = True
+  else:
+    paper_filing_review = False
+  paper_filing_block = True
+---
 #users gather loop
 code: |
   users[i].name.first
@@ -166,6 +194,15 @@ code: |
   else:
     users[i].is_joining
   users[i].complete = True
+---
+code: |
+  def include_a_certificate():
+    if not can_paper_file:
+      return "no"
+    elif in_jail:
+      return "jail"
+    else:
+      return "mail"
 ---
 code: |
   def any_co_appellant():
@@ -290,7 +327,7 @@ subquestion: |
 ---
 id: order date
 question: |
-  What is the date the order or judgment you want to appeal?
+  What is the date of the order or judgment you want to appeal?
 subquestion: |
   This is the date the court issued its ruling.
 
@@ -304,7 +341,7 @@ id: final judgment
 question: |
   Is the ${order_date} order the final judgment in your case?
 subquestion: |
- A final judgment is ordered when the judge has made a final decision and the case is over.
+ A final judgment is entered when the judge has made a final decision and the case is over.
 
  Sometimes a party will file a post-judgment motion, such as a Motion to Reconsider. You can still click **Yes** here even if another party has filed such a motion.
 fields:
@@ -576,7 +613,7 @@ question: |
 subquestion: |
   You must file your appeal within 30 days after the court ruled on the Motion to Reconsider or other post-judgment motion.
 
-  It has been ${date_difference(starting=reconsider_ruling_date, ending=today())} since the Motion to Vacate was filed.
+  It has been ${date_difference(starting=reconsider_ruling_date, ending=today())} since the post-judgment motion was filed.
 
   You may ask for more time to file your *Notice of Appeal*. To do so, file a motion for leave to file a late *Notice of Appeal* with the appellate court within 30 days of when your *Notice of Appeal* was originally due. You must attach your *Notice of Appeal* to the motion and pay a $50 filing fee. If you cannot afford to pay the filing fee, you can ask the court to file for free or at a reduced cost by filing an Appellate Fee Waiver.
 
@@ -682,7 +719,7 @@ question: |
 subquestion: |
   Sometimes, when you appeal an order, you can also include earlier orders the judge made in the same case. For example, the judge may have made a decision earlier in the case about what evidence could be used at trial. If that decision affected the order you are appealing, you may want to include that earlier order in your appeal.
   
-  You can add up to two earlier orders that are elated to the ${order_date} order or judgment. orders to your *Notice of Appeal*.
+  You can add up to two earlier orders that are related to the ${order_date} order or judgment.
 fields:
   - no label: other_orders.there_are_any
     datatype: yesnoradio
@@ -1169,6 +1206,8 @@ fields:
 ---
 id: knows delivery method
 generic object: ALIndividual
+undefine:
+  - paper_filing_block
 question: |
   % if x.is_represented:
   Do you know **how** and **when** you will send your forms to ${ x.lawyer.name_full() }?
@@ -1210,6 +1249,8 @@ terms:
 ---
 generic object: ALIndividual
 id: party delivery method
+undefine:
+  - paper_filing_block
 question: |
   % if x.is_represented:
   How will you send your forms to ${ x.lawyer.name_full() }?
@@ -1227,14 +1268,19 @@ subquestion: |
 fields:
   - Email: x.email_delivery
     datatype: yesnowide
+  - Email address (for direct email delivery): x.delivery_email
+    datatype: email
+    js show if: 
+      val("x.email_delivery") == true
+    required: False
   - E-filing system: x.efm_delivery
     datatype: yesnowide
     help: |
       The court's e-filing system could be any approved electronic filing service provider (EFSP).
-  - Email address: x.email
+  - Email address (for delivery thru the e-filing system): x.efsp_email
     datatype: email
     js show if: 
-      val("x.email_delivery") == true || val("x.efm_delivery") == true
+      val("x.efm_delivery") == true
     required: False
   - "US mail, a delivery company (like UPS or FedEx), or in-person by hand delivery": x.physical_delivery
     datatype: yesnowide
@@ -1302,6 +1348,30 @@ fields:
     required: False
   - Name of prison or jail: x.delivery_jail_name
     maxlength: 40
+    js show if: 
+      val("x.physical_delivery") == true && val("x.jail_delivery") == true
+    required: False
+  - Street address: x.jail_delivery_address.address
+    address autocomplete: True
+    js show if: 
+      val("x.physical_delivery") == true && val("x.jail_delivery") == true
+    required: False
+  - Address line 2: x.jail_delivery_address.unit
+    js show if: 
+      val("x.physical_delivery") == true && val("x.jail_delivery") == true
+    required: False
+  - City: x.jail_delivery_address.city
+    js show if: 
+      val("x.physical_delivery") == true && val("x.jail_delivery") == true
+    required: False
+  - State: x.jail_delivery_address.state
+    code: |
+      states_list()
+    default: IL      
+    js show if: 
+      val("x.physical_delivery") == true && val("x.jail_delivery") == true
+    required: False
+  - ZIP code: x.jail_delivery_address.zip
     js show if: 
       val("x.physical_delivery") == true && val("x.jail_delivery") == true
     required: False
@@ -1380,12 +1450,63 @@ question: |
 subquestion: |
   **Don't forget!** Make sure you review and complete the Proof of Delivery section of your forms. 
   
-  [FILE notice_appeal_delivery_screenshot_2025.png, 100%, Proof of Delivery section of forms]
+  [FILE notice_appeal_delivery_screenshot_2026.png, 100%, Proof of Delivery section of forms]
 
   **Instructions when delivering your forms by hand:**
 
   * If a party in your case does not have a lawyer, you can hand deliver the forms to them or to a family member who is 13 or older at their home.
   * If they do have a lawyer, you can hand deliver the forms to the lawyer or to the lawyer's office.
+
+---
+id: can paper file
+question: |
+  About e-filing
+subquestion: |
+  You will have to file your forms with the trial court. Court forms are filed using electronic filing, also called "e-filing." To learn more about e-filing, read ILAO's [**E-filing FAQ**](https://www.illinoislegalaid.org/node/184011).
+  
+  You must file your forms by e-filing unless you are exempt. If you want to ask for an e-filing exemption, you can use ILAO's [**E-filing exemption - Circuit court Easy Form**](https://www.illinoislegalaid.org/node/109376).
+
+  You may be exempt from e-filing if:
+  
+    * You are an inmate in prison or jail and you do not have a lawyer,
+    * You have a disability that keeps you from e-filing,
+    * You do not have internet or computer access,
+    * You do not have an email account,
+    * You do not have a credit card, debit card, or bank account,
+    * You have trouble reading, writing, or speaking English,
+    * Tried to e-file your forms but were not able to, or
+    * You are filing an emergency case.
+fields:
+  - Are any of the above exemptions true of you?: can_paper_file
+    datatype: yesnoradio
+---
+id: in jail
+question: |
+  Are you incarcerated?
+subquestion: |
+  **Incarcerated** means "in prison" or "in jail."
+fields:
+  - no label: in_jail
+    datatype: yesnoradio
+  - What is your inmate ID number?: inmate_id
+    maxlength: 30
+    show if: in_jail
+---
+id: jail name
+question: |
+  Where are you incarcerated?
+fields:
+  - Prison or jail name: jail_name
+    maxlength: 50
+  - Street address: appellant_jail_address.address
+    address autocomplete: True
+  - Address line 2: appellant_jail_address.unit
+    required: False
+  - City: appellant_jail_address.city
+  - State: appellant_jail_address.state
+    code: |
+      states_list() 
+  - ZIP code: appellant_jail_address.zip
 ---
 id: users address
 question: |
@@ -1404,6 +1525,40 @@ fields:
     code: |
       states_list() 
   - ZIP code: users[i].address.zip
+---
+id: send from location
+question: |
+  Where will you mail your forms from?
+subquestion: |
+  Since you are not e-filing, you will have to send your forms to the circuit clerk by US mail or by a third-party delivery company.
+
+  If you do not know this, you can leave this blank.
+fields:
+  - Address or intersection of mailbox or delivery company: send_from_location
+    maxlength: 40
+    required: False
+  - City of mailbox or delivery company: send_from_city
+    maxlength: 30
+    required: False
+  - State of mailbox or delivery company: send_from_state
+    required: False
+    code: |
+      states_list()  
+---
+id: send from date
+question: |
+  When will you mail your forms to the circuit clerk?
+subquestion: |
+  If you do not know this, you can leave this blank.
+fields:
+  - Date: send_from_date
+    datatype: date
+    required: False
+    min: ${today()}
+    max: ${ today().plus(years=1) }
+  - Time: send_from_time
+    datatype: time
+    required: False
 ---
 id: other party address
 sets:
@@ -1457,6 +1612,8 @@ fields:
 ---
 sets:
   - users[0].email
+undefine:
+  - paper_filing_block
 id: your contact information
 question: |
   Your contact information
@@ -1501,9 +1658,9 @@ subquestion: |
 
   <div class="alert alert-info ilao-info" role="alert">
     <h6 class="alert-heading">What it means to sign your forms</h6>
-    <p>By signing your court forms you are certifying that:</p>
+    <p>By signing your <i>Notice of Appeal</i> you are certifying that:</p>
     <p><ul>
-      <li>Everything in the forms is true and correct, or you have been informed or you believe it to be true and correct, and</li>
+      <li>Everything on the forms is true and correct, or you have been informed or believe it to be true and correct, and</li>
       <li>You understand that making a false statement on the forms is perjury and has penalties provided by law.</li>
     </ul></p>
   <p>See the <a href="https://www.ilga.gov/legislation/ilcs/documents/073500050k1-109.htm"><b>Illinois Code of Civil Procedure, 735 ILCS 5/1-109</b></a> for more information.</p>
@@ -1538,7 +1695,11 @@ subquestion: |
    </div>
   
   % endif
-  After you download your forms, you will need to serve your forms to all other parties in the case and file them with the trial court that heard your case. This program **does not file** your forms for you. 
+  % if can_paper_file:
+  After you download your forms, you will need to serve your forms to all other parties in the case and mail them to the circuit clerk of the trial court that heard your case. This program **does not file** your forms for you. 
+  % else:
+  After you download your forms, you will need to serve your forms to all other parties in the case and e-file them with the trial court that heard your case. This program **does not file** your forms for you. 
+  % endif
 
   You will need to file a *Docketing Statement* in the appellate court within 14 days of filing your *Notice of Appeal*. You can find the *Docketing Statement* form and instructions at the [**Illinois Courts website**](https://www.illinoiscourts.gov/documents-and-forms/approved-forms/appellate-forms/docketing-statement/).
 
@@ -1596,7 +1757,10 @@ content: |
 ---
 objects:
   - instructions: ALDocument.using(title="Instructions", filename="instructions.pdf", has_addendum=False)
-  - notice_of_appeal: ALDocument.using(title="Notice of Appeal", filename="notice_of_appeal.pdf", has_addendum=False)
+  - notice_of_appeal_1: ALDocument.using(title="Notice of Appeal", filename="notice_of_appeal.pdf", has_addendum=False)
+  - notice_of_appeal_2: ALDocument.using(title="Notice of Appeal", filename="notice_of_appeal.pdf", has_addendum=False)
+  - notice_of_appeal_3: ALDocument.using(title="Notice of Appeal", filename="notice_of_appeal.pdf", has_addendum=False)
+  - notice_of_appeal_4: ALDocument.using(title="Notice of Appeal", filename="notice_of_appeal.pdf", has_addendum=False)
 ---
 generic object: ALIndividual
 objects:
@@ -1606,7 +1770,10 @@ objects:
   - additional_delivery_bundle: ALDocumentBundle.using(elements=[], title= "Additional Proof of Delivery", filename="additional_proof_of_delivery.pdf", has_addendum=False)
 ---
 objects:
-  - notice_bundle: ALDocumentBundle.using(elements=[notice_of_appeal, additional_delivery_bundle], filename="notice_of_appeal.pdf", title="Notice of Appeal")
+  - notice_and_cert: ALDocumentBundle.using(elements=[notice_of_appeal_1, notice_of_appeal_2, notice_of_appeal_3, notice_of_appeal_4], filename="notice_of_appeal.pdf", title="Notice of Appeal")
+---
+objects:
+  - notice_bundle: ALDocumentBundle.using(elements=[notice_and_cert, additional_delivery_bundle], filename="notice_of_appeal.pdf", title="Notice of Appeal")
 ---
 objects:
   - al_user_bundle: ALDocumentBundle.using(elements=[instructions, notice_bundle], filename="notice_of_appeal.pdf", title="All forms")
@@ -1628,7 +1795,15 @@ code: |
 ---
 code: |
   instructions.enabled = True
-  notice_of_appeal.enabled = True
+  notice_and_cert.enabled = True
+  notice_of_appeal_1.enabled = True
+  notice_of_appeal_2.enabled = False
+  notice_of_appeal_3.enabled = False
+  if include_a_certificate() == "mail":
+    notice_of_appeal_2.enabled = True
+  elif include_a_certificate() == "jail":
+    notice_of_appeal_3.enabled = True
+  notice_of_appeal_4.enabled = True
   notice_bundle.enabled = True
 ---
 attachment:
@@ -1642,12 +1817,12 @@ attachment:
       - "fake": ${ "" }
 ---
 attachment:
-  variable name: notice_of_appeal[i]
-  name: notice_of_appeal
-  filename: notice_of_appeal
+  variable name: notice_of_appeal_1[i]
+  name: notice_of_appeal_1
+  filename: notice_of_appeal_1
   skip undefined: True
   editable: False
-  pdf template file: notice_of_appeal.pdf
+  pdf template file: notice_of_appeal_Part1.pdf
   fields:
     - "appellate_district": ${appellate_district}
     - "minor_involved": ${minor_involved}
@@ -1688,7 +1863,7 @@ attachment:
     - "cross_appeal": ${True if other_appeals and appeal_type == "cross" else False}
     - "appellant_1_name_1": ${users[0].name_full()}
     - "appellant_1_name_2": ${users[0].name_full()}
-    - "appellant_1_name_3": ${users[0].name_full()}
+    
     - "appellant_2_name": ${get_co_appellant().name_full() if any_co_appellant() else ""}
     - "appellant_2_name_2": ${get_co_appellant().name_full() if any_co_appellant() else ""}
     - "appellant_1_is_plaintiff": ${True if party_label == "plaintiff" else False}
@@ -1713,20 +1888,83 @@ attachment:
     - "other_relief_check": ${other}
     - "other_relief_text": ${other_text if other else ""}
     - "appellant_1_signature_1": ${users[0].name_full() if e_signature else ""}
-    - "appellant_1_signature_2": ${users[0].name_full() if e_signature else ""}
     - "appellant_1_street": ${users[0].address.line_one(bare=True)}
-    - "appellant_1_street_2": ${users[0].address.line_one(bare=True)}
-    - "appellant_1_csz": ${users[0].address.line_two()}
-    - "appellant_1_csz_2": ${users[0].address.line_two()}
+    - "appellant_1_csz": ${users[0].address.line_two()}  
     - "appellant_1_email": ${users[0].email if users[0].has_email_address else ""}
-    - "appellant_1_email_2": ${users[0].email if users[0].has_email_address else ""}
     - "appellant_1_phone": ${phone_number_formatted(users[0].phone_number)}
-    - "appellant_1_phone_2": ${phone_number_formatted(users[0].phone_number)}
     - "appellant_2_signature_1": ${""}
     - "appellant_2_street": ${get_co_appellant().address.line_one(bare=True) if any_co_appellant() else ""}
     - "appellant_2_csz": ${get_co_appellant().address.line_two() if any_co_appellant() else ""}
     - "appellant_2_email": ${get_co_appellant().email if any_co_appellant() else ""}
     - "appellant_2_phone": ${phone_number_formatted(get_co_appellant().phone_number) if any_co_appellant() else ""}
+    - "pn_1": ${"1"}
+    - "pn_2": ${"2"}
+    - "last_1": ${"6" if include_a_certificate() == "no" else "7"}
+    - "last_2": ${"6" if include_a_certificate() == "no" else "7"}
+---
+attachment:
+  variable name: notice_of_appeal_2[i]
+  name: notice_of_appeal_2
+  filename: notice_of_appeal_2
+  skip undefined: True
+  editable: False
+  pdf template file: notice_of_appeal_Part2.pdf
+  fields:
+    - "circuit_mail_location": |
+          % if send_from_location != "" and send_from_city != "" and send_from_state != "":
+          ${send_from_location }, ${send_from_city}, ${ state_name(send_from_state) }
+          % elif send_from_location != "" and send_from_city != "":
+          ${send_from_location }, ${send_from_city}
+          % elif send_from_location != "" and send_from_state != "":
+          ${send_from_location }, ${ state_name(send_from_state) }
+          % elif send_from_city != "" and send_from_state != "":
+          ${send_from_city}, ${ state_name(send_from_state) }
+          % elif send_from_location != "":
+          ${send_from_location}
+          % elif send_from_city != "":
+          ${send_from_city}
+          % else:
+          ${state_name(send_from_state)}
+          % endif
+    - "circuit_date": ${send_from_date}
+    - "circuit_time": ${format_time(send_from_time, format='h:mm a')}
+    - "circuit_county": ${trial_court.address.county}
+    - "circuit_address": ${trial_court.address.on_one_line(bare=True)}
+    - "circuit_signature": ${users[0].name_full() if e_signature else ""}
+    - "circuit_user_name": ${users[0].name_full()}
+    - "circuit_sign_date": ${today() if e_signature else ""}
+    - "pn_3": ${"3"}
+    - "last_3": ${"7"}
+---
+attachment:
+  variable name: notice_of_appeal_3[i]
+  name: notice_of_appeal_3
+  filename: notice_of_appeal_3
+  skip undefined: True
+  editable: False
+  pdf template file: notice_of_appeal_Part3.pdf
+  fields:
+    - "circuit_jail": |
+        ${jail_name}, ${appellant_jail_address.on_one_line(bare=True)}
+    - "inmate_id": ${inmate_id}
+    - "circuit_county_if_jail": ${trial_court.address.county}
+    - "circuit_address_if_jail": ${trial_court.address.on_one_line(bare=True)}
+    - "circuit_date_if_jail": ${send_from_date}
+    - "circuit_time_if_jail": ${format_time(send_from_time, format='h:mm a')}
+    - "circuit_signature_if_jail": ${users[0].name_full() if e_signature else ""}
+    - "circuit_name_if_jail": ${users[0].name_full()}
+    - "sign_date_if_jail": ${today() if e_signature else ""}
+    - "pn_4": ${"3"}    
+    - "last_4": ${"7"}
+---
+attachment:
+  variable name: notice_of_appeal_4[i]
+  name: notice_of_appeal_4
+  filename: notice_of_appeal_4
+  skip undefined: True
+  editable: False
+  pdf template file: notice_of_appeal_Part4.pdf
+  fields:
     - "delivery_party_1_name": |
         % if delivery_parties[0].is_represented:
         ${delivery_parties[0].lawyer.name_full()} (lawyer for ${delivery_parties[0].name_full()})
@@ -1734,20 +1972,11 @@ attachment:
         ${delivery_parties[0].name_full()}
         % endif
     - "delivery_party_1_address": ${delivery_parties[0].address.on_one_line(bare=True)}
-    - "delivery_party_1_email": ${delivery_parties[0].email}
-    - "delivery_party_1_electronic": ${True if delivery_parties[0].knows_delivery_method and (delivery_parties[0].email_delivery or delivery_parties[0].efm_delivery) else False}
+    - "delivery_party_1_email": ${delivery_parties[0].delivery_email if delivery_parties[0].knows_delivery_method and delivery_parties[0].email_delivery else ""}
     - "delivery_party_1_by_email": ${delivery_parties[0].email_delivery if delivery_parties[0].knows_delivery_method else False}
     - "delivery_party_1_efsp": ${delivery_parties[0].efm_delivery if delivery_parties[0].knows_delivery_method else False}
-    - "delivery_party_1_not_electronic": |
-        % if delivery_parties[0].knows_delivery_method:
-        % if delivery_parties[0].email_delivery or delivery_parties[0].efm_delivery:
-        ${False}
-        % else:
-        ${True}
-        % endif
-        % else:
-        ${False}
-        % endif
+    - "delivery_party_1_efsp_email": ${delivery_parties[0].efsp_email if delivery_parties[0].knows_delivery_method and delivery_parties[0].efm_delivery else ""}
+    - "delivery_party_1_not_electronic": ${delivery_parties[0].physical_delivery if delivery_parties[0].knows_delivery_method else ""}
     - "delivery_party_1_mail": ${delivery_parties[0].mail_delivery if delivery_parties[0].knows_delivery_method and delivery_parties[0].physical_delivery else False}
     - "delivery_party_1_mail_location": |
           % if delivery_parties[0].knows_delivery_method and delivery_parties[0].physical_delivery and delivery_parties[0].mail_delivery:
@@ -1772,7 +2001,18 @@ attachment:
     - "delivery_party_1_hand": ${delivery_parties[0].hand_delivery if delivery_parties[0].knows_delivery_method and delivery_parties[0].physical_delivery else False}
     - "delivery_party_1_hand_address": ${delivery_parties[0].address if delivery_parties[0].knows_delivery_method and delivery_parties[0].physical_delivery and delivery_parties[0].hand_delivery else ""}
     - "delivery_party_1_from_jail": ${delivery_parties[0].jail_delivery if delivery_parties[0].knows_delivery_method and delivery_parties[0].physical_delivery else ""}
-    - "delivery_party_1_jail_name": ${delivery_parties[0].delivery_jail_name if delivery_parties[0].knows_delivery_method and delivery_parties[0].physical_delivery and delivery_parties[0].jail_delivery else ""}
+    - "delivery_party_1_jail_name": |
+          % if delivery_parties[0].knows_delivery_method and delivery_parties[0].physical_delivery and delivery_parties[0].jail_delivery:
+          % if delivery_parties[0].delivery_jail_name != "" and delivery_parties[0].jail_delivery_address.address != "" and delivery_parties[0].jail_delivery_address.city != "" and delivery_parties[0].jail_delivery_address.state != "":
+          ${ delivery_parties[0].delivery_jail_name }, ${ delivery_parties[0].jail_delivery_address.on_one_line(bare=True)}
+          % elif delivery_parties[0].delivery_jail_name == "":
+          ${ delivery_parties[0].jail_delivery_address.on_one_line(bare=True)}
+          % else:
+          ${ delivery_parties[0].delivery_jail_name }
+          % endif
+          % else:
+          ${""}
+          % endif
     - "delivery_party_1_date": ${ delivery_parties[0].delivery_date if delivery_parties[0].knows_delivery_method and delivery_parties[0].knows_delivery_date else '' }
     - "delivery_party_1_time": ${ format_time(delivery_parties[0].delivery_time, format='h:mm a') if delivery_parties[0].knows_delivery_method and delivery_parties[0].knows_delivery_time else '' }
     - "delivery_party_2_name": |
@@ -1782,20 +2022,11 @@ attachment:
         ${delivery_parties[1].name_full()}
         % endif
     - "delivery_party_2_address": ${delivery_parties[1].address.on_one_line(bare=True)}
-    - "delivery_party_2_email": ${delivery_parties[1].email}
-    - "delivery_party_2_electronic": ${True if delivery_parties[1].knows_delivery_method and (delivery_parties[1].email_delivery or delivery_parties[1].efm_delivery) else False}
+    - "delivery_party_2_email": ${delivery_parties[1].delivery_email if delivery_parties[1].knows_delivery_method and delivery_parties[1].email_delivery else ""}
     - "delivery_party_2_by_email": ${delivery_parties[1].email_delivery if delivery_parties[1].knows_delivery_method else False}
     - "delivery_party_2_efsp": ${delivery_parties[1].efm_delivery if delivery_parties[1].knows_delivery_method else False}
-    - "delivery_party_2_not_electronic": |
-        % if delivery_parties[1].knows_delivery_method:
-        % if delivery_parties[1].email_delivery or delivery_parties[1].efm_delivery:
-        ${False}
-        % else:
-        ${True}
-        % endif
-        % else:
-        ${False}
-        % endif
+    - "delivery_party_2_efsp_email": ${delivery_parties[1].efsp_email if delivery_parties[1].knows_delivery_method and delivery_parties[1].efm_delivery else ""}
+    - "delivery_party_2_not_electronic": ${delivery_parties[1].physical_delivery if delivery_parties[1].knows_delivery_method else ""}
     - "delivery_party_2_mail": ${delivery_parties[1].mail_delivery if delivery_parties[1].knows_delivery_method and delivery_parties[1].physical_delivery else False}
     - "delivery_party_2_mail_location": |
           % if delivery_parties[1].knows_delivery_method and delivery_parties[1].physical_delivery and delivery_parties[1].mail_delivery:
@@ -1820,7 +2051,18 @@ attachment:
     - "delivery_party_2_hand": ${delivery_parties[1].hand_delivery if delivery_parties[1].knows_delivery_method and delivery_parties[1].physical_delivery else False}
     - "delivery_party_2_hand_address": ${delivery_parties[1].address if delivery_parties[1].knows_delivery_method and delivery_parties[1].physical_delivery and delivery_parties[1].hand_delivery else ""}
     - "delivery_party_2_from_jail": ${delivery_parties[1].jail_delivery if delivery_parties[1].knows_delivery_method and delivery_parties[1].physical_delivery else ""}
-    - "delivery_party_2_jail_name": ${delivery_parties[1].delivery_jail_name if delivery_parties[1].knows_delivery_method and delivery_parties[1].physical_delivery and delivery_parties[1].jail_delivery else ""}
+    - "delivery_party_2_jail_name": |
+          % if delivery_parties[1].knows_delivery_method and delivery_parties[1].physical_delivery and delivery_parties[1].jail_delivery:
+          % if delivery_parties[1].delivery_jail_name != "" and delivery_parties[1].jail_delivery_address.address != "" and delivery_parties[1].jail_delivery_address.city != "" and delivery_parties[1].jail_delivery_address.state != "":
+          ${ delivery_parties[1].delivery_jail_name }, ${ delivery_parties[1].jail_delivery_address.on_one_line(bare=True)}
+          % elif delivery_parties[1].delivery_jail_name == "":
+          ${ delivery_parties[1].jail_delivery_address.on_one_line(bare=True)}
+          % else:
+          ${ delivery_parties[1].delivery_jail_name }
+          % endif
+          % else:
+          ${""}
+          % endif
     - "delivery_party_2_date": ${ delivery_parties[1].delivery_date if delivery_parties[1].knows_delivery_method and delivery_parties[1].knows_delivery_date else '' }
     - "delivery_party_2_time": ${ format_time(delivery_parties[1].delivery_time, format='h:mm a') if delivery_parties[1].knows_delivery_method and delivery_parties[1].knows_delivery_time else '' }
     - "delivery_party_3_name": |
@@ -1830,20 +2072,12 @@ attachment:
         ${delivery_parties[2].name_full()}
         % endif
     - "delivery_party_3_address": ${delivery_parties[2].address.on_one_line(bare=True)}
-    - "delivery_party_3_email": ${delivery_parties[2].email}
+    - "delivery_party_3_email": ${delivery_parties[2].delivery_email if delivery_parties[2].knows_delivery_method and delivery_parties[2].email_delivery else ""}
     - "delivery_party_3_electronic": ${True if delivery_parties[2].knows_delivery_method and (delivery_parties[2].email_delivery or delivery_parties[2].efm_delivery) else False}
     - "delivery_party_3_by_email": ${delivery_parties[2].email_delivery if delivery_parties[2].knows_delivery_method else False}
     - "delivery_party_3_efsp": ${delivery_parties[2].efm_delivery if delivery_parties[2].knows_delivery_method else False}
-    - "delivery_party_3_not_electronic": |
-        % if delivery_parties[2].knows_delivery_method:
-        % if delivery_parties[2].email_delivery or delivery_parties[2].efm_delivery:
-        ${False}
-        % else:
-        ${True}
-        % endif
-        % else:
-        ${False}
-        % endif
+    - "delivery_party_3_efsp_email": ${delivery_parties[2].efsp_email if delivery_parties[2].knows_delivery_method and delivery_parties[2].efm_delivery else ""}
+    - "delivery_party_3_not_electronic": ${delivery_parties[2].physical_delivery if delivery_parties[2].knows_delivery_method else ""}
     - "delivery_party_3_mail": ${delivery_parties[2].mail_delivery if delivery_parties[2].knows_delivery_method and delivery_parties[2].physical_delivery else False}
     - "delivery_party_3_mail_location": |
           % if delivery_parties[2].knows_delivery_method and delivery_parties[2].physical_delivery and delivery_parties[2].mail_delivery:
@@ -1868,7 +2102,18 @@ attachment:
     - "delivery_party_3_hand": ${delivery_parties[2].hand_delivery if delivery_parties[2].knows_delivery_method and delivery_parties[2].physical_delivery else False}
     - "delivery_party_3_hand_address": ${delivery_parties[2].address if delivery_parties[2].knows_delivery_method and delivery_parties[2].physical_delivery and delivery_parties[2].hand_delivery else ""}
     - "delivery_party_3_from_jail": ${delivery_parties[2].jail_delivery if delivery_parties[2].knows_delivery_method and delivery_parties[2].physical_delivery else ""}
-    - "delivery_party_3_jail_name": ${delivery_parties[2].delivery_jail_name if delivery_parties[2].knows_delivery_method and delivery_parties[2].physical_delivery and delivery_parties[2].jail_delivery else ""}
+    - "delivery_party_3_jail_name": |
+          % if delivery_parties[2].knows_delivery_method and delivery_parties[2].physical_delivery and delivery_parties[2].jail_delivery:
+          % if delivery_parties[2].delivery_jail_name != "" and delivery_parties[2].jail_delivery_address.address != "" and delivery_parties[2].jail_delivery_address.city != "" and delivery_parties[2].jail_delivery_address.state != "":
+          ${ delivery_parties[2].delivery_jail_name }, ${ delivery_parties[2].jail_delivery_address.on_one_line(bare=True)}
+          % elif delivery_parties[2].delivery_jail_name == "":
+          ${ delivery_parties[2].jail_delivery_address.on_one_line(bare=True)}
+          % else:
+          ${ delivery_parties[2].delivery_jail_name }
+          % endif
+          % else:
+          ${""}
+          % endif
     - "delivery_party_3_date": ${ delivery_parties[2].delivery_date if delivery_parties[2].knows_delivery_method and delivery_parties[2].knows_delivery_date else '' }
     - "delivery_party_3_time": ${ format_time(delivery_parties[2].delivery_time, format='h:mm a') if delivery_parties[2].knows_delivery_method and delivery_parties[2].knows_delivery_time else '' }
     - "no_second_delivery": ${True if delivery_parties.number_gathered() < 2 else False}
@@ -1877,6 +2122,20 @@ attachment:
     - "yes_third_delivery": ${True if delivery_parties.number_gathered() >= 3 else False}
     - "additional_proof": ${True if delivery_parties.number_gathered() > 3 else False}
     - "for_self": ${True}
+    - "appellant_1_signature_2": ${users[0].name_full() if e_signature else ""}
+    - "appellant_1_name_3": ${users[0].name_full()}
+    - "appellant_1_street_2": ${users[0].address.line_one(bare=True)}
+    - "appellant_1_csz_2": ${users[0].address.line_two()}
+    - "appellant_1_email_2": ${users[0].email if users[0].has_email_address else ""}
+    - "appellant_1_phone_2": ${phone_number_formatted(users[0].phone_number)}
+    - "pn_5": ${"3" if include_a_certificate() == "no" else "4"}
+    - "pn_6": ${"4" if include_a_certificate() == "no" else "5"}
+    - "pn_7": ${"5" if include_a_certificate() == "no" else "6"}
+    - "pn_8": ${"6" if include_a_certificate() == "no" else "7"}
+    - "last_5": ${"6" if include_a_certificate() == "no" else "7"}
+    - "last_6": ${"6" if include_a_certificate() == "no" else "7"}
+    - "last_7": ${"6" if include_a_certificate() == "no" else "7"}
+    - "last_8": ${"6" if include_a_certificate() == "no" else "7"}
 ---
 generic object: ALIndividual
 attachment:
@@ -1887,7 +2146,8 @@ attachment:
   editable: False
   pdf template file: notice_appeal_proof_delivery.pdf
   fields:
-    - "appellate_case_number": ${""}
+    - "appellate_case_number_1": ${""}
+    - "appellate_case_number_2": ${""}
     - "document_name": ${"Notice of Appeal"}
     - "party_name": |
         % if x.is_represented:
@@ -1895,10 +2155,10 @@ attachment:
         % else:
         ${x.name_full()}
         % endif
-    - "party_address": ${x.address.on_one_line(bare=True)}
-    - "party_email": ${x.email}
-    - "party_electronic": ${True if x.knows_delivery_method and (x.email_delivery or x.efm_delivery) else False}
-    - "party_not_electronic": ${False if x.email_delivery or x.efm_delivery or not x.knows_delivery_method else True}
+    - "party_address": ${x.address.on_one_line(bare=True) if x.email_delivery or x.efm_delivery or not x.knows_delivery_method else ""}
+    - "party_email": ${x.delivery_email if x.knows_delivery_method and x.email_delivery else ""}
+    - "party_efsp_email": ${x.efsp_email if x.knows_delivery_method and x.efm_delivery else ""}
+    - "party_not_electronic": ${x.physical_delivery if x.knows_delivery_method else ""}
     - "party_by_email": ${x.email_delivery if x.knows_delivery_method else False}
     - "party_efsp": ${x.efm_delivery if x.knows_delivery_method else False}
     - "party_mail": ${x.mail_delivery if x.knows_delivery_method and x.physical_delivery else False}
@@ -1924,7 +2184,6 @@ attachment:
           % else:
           ${ "" }
           % endif
-    - "party_hand_address": ${x.address if x.knows_delivery_method and x.physical_delivery and x.hand_delivery else ""}
     - "party_jail_name": ${x.delivery_jail_name if x.knows_delivery_method and x.physical_delivery and x.jail_delivery else ""}
     - "party_date": ${ x.delivery_date if x.knows_delivery_method and x.knows_delivery_date else '' }
     - "party_time": ${ format_time(x.delivery_time, format='h:mm a') if x.knows_delivery_method and x.knows_delivery_time else '' }
@@ -2008,7 +2267,7 @@ review:
       % else:
       No
       % endif
-    show if: court_rule_on_post_motion and (final_judgment or special_findings or special_type)
+    show if: motion_to_reconsider and (final_judgment or special_findings or special_type)
   - Edit: other_orders.there_are_any
     button: |
       **Do you want to add more orders to your appeal?**
@@ -2193,7 +2452,7 @@ review:
 id: edit users review screen
 continue button field: users.revisit
 question: |
-  Edit ${opposing_party}s
+  Edit ${party_label}s
 subquestion: |
   ${ users.table }
 
@@ -2202,7 +2461,7 @@ subquestion: |
 id: edit other parties review screen
 continue button field: other_parties.revisit
 question: |
-  Edit ${party_label}s
+  Edit ${opposing_party}s
 subquestion: |
   ${ other_parties.table }
 
@@ -2350,7 +2609,7 @@ review:
       % endif
     show if: x.knows_delivery_method
 ---
-id: case details review screen
+id: delivery review screen
 event: section_delivery
 section: Delivery
 question: |
@@ -2377,8 +2636,58 @@ review:
         * ${item.name_full()}
       % endfor
     show if: anyone_opposing
+  - Edit: can_paper_file
+    button: |
+      **Are you exempt from e-filing?**
+      ${word(yesno(can_paper_file))}
+  - Edit: in_jail
+    button: |
+      **Are you in prison or jail?**
+      % if in_jail:
+      Yes, my inmate ID is ${inmate_id}.
+      % else:
+      No
+      % endif
+    show if: can_paper_file
+  - Edit: jail_name
+    button: |
+      **Prison or jail:**
+      ${jail_name}, ${appellant_jail_address.on_one_line(bare=True)}
+    show if: can_paper_file and in_jail
+  - Edit: send_from_location
+    button: |
+      **Filing from:**
+      % if send_from_location != "" and send_from_city != "" and send_from_state != "":
+      ${send_from_location }, ${send_from_city}, ${ state_name(send_from_state) }
+      % elif send_from_location != "" and send_from_city != "":
+      ${send_from_location }, ${send_from_city}
+      % elif send_from_location != "" and send_from_state != "":
+      ${send_from_location }, ${ state_name(send_from_state) }
+      % elif send_from_city != "" and send_from_state != "":
+      ${send_from_city}, ${ state_name(send_from_state) }
+      % elif send_from_location != "":
+      ${send_from_location}
+      % elif send_from_city != "":
+      ${send_from_city}
+      % elif send_from_state != "":
+      ${state_name(send_from_state)}
+      % else:
+      I don't know.
+      % endif
+    show if: can_paper_file and not in_jail
+  - Edit: send_from_date
+    button: |
+      **Filing on:**
+      % if send_from_date != "" and send_from_time != "":
+      ${ send_from_date } at ${ format_time(send_from_time, "h:mm a") }
+      % elif send_from_date != "":
+      ${send_from_date}
+      % else:
+      I don't know.
+      % endif
+    show if: can_paper_file
 ---
-id: case details review screen
+id: user review screen
 event: section_user
 section: About you
 question: |
@@ -2618,6 +2927,56 @@ review:
     button: |
       **In which appellate district will you file?**
       ${appellate_district}
+  - Edit: can_paper_file
+    button: |
+      **Are you exempt from e-filing?**
+      ${word(yesno(can_paper_file))}
+  - Edit: in_jail
+    button: |
+      **Are you in prison or jail?**
+      % if in_jail:
+      Yes, my inmate ID is ${inmate_id}.
+      % else:
+      No
+      % endif
+    show if: can_paper_file
+  - Edit: jail_name
+    button: |
+      **Prison or jail:**
+      ${jail_name}, ${appellant_jail_address.on_one_line(bare=True)}
+    show if: can_paper_file and in_jail
+  - Edit: send_from_location
+    button: |
+      **Filing from:**
+      % if send_from_location != "" and send_from_city != "" and send_from_state != "":
+      ${send_from_location }, ${send_from_city}, ${ state_name(send_from_state) }
+      % elif send_from_location != "" and send_from_city != "":
+      ${send_from_location }, ${send_from_city}
+      % elif send_from_location != "" and send_from_state != "":
+      ${send_from_location }, ${ state_name(send_from_state) }
+      % elif send_from_city != "" and send_from_state != "":
+      ${send_from_city}, ${ state_name(send_from_state) }
+      % elif send_from_location != "":
+      ${send_from_location}
+      % elif send_from_city != "":
+      ${send_from_city}
+      % elif send_from_state != "":
+      ${state_name(send_from_state)}
+      % else:
+      I don't know.
+      % endif
+    show if: can_paper_file and not in_jail
+  - Edit: send_from_date
+    button: |
+      **Filing on:**
+      % if send_from_date != "" and send_from_time != "":
+      ${ send_from_date } at ${ format_time(send_from_time, "h:mm a") }
+      % elif send_from_date != "":
+      ${send_from_date}
+      % else:
+      I don't know.
+      % endif
+    show if: can_paper_file
   - note: |
       <h4>About you</h4>
   - Edit: users[0].name.first
