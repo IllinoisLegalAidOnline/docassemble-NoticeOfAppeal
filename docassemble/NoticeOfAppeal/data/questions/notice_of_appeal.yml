@@ -52,6 +52,7 @@ code: |
   accept_terms
   about_appeals
   about_deadlines
+  about_fees
 
   nav.set_section('section_order')
   order_date
@@ -90,7 +91,7 @@ code: |
     order_eligible
   else:
     not_appealable
-  about_fees
+  
   if other_orders.there_are_any:
     other_orders.gather()
 
@@ -125,7 +126,13 @@ code: |
   appellate_district
 
   nav.set_section('section_delivery')
-  if anyone_opposing or users.number_gathered() > 1:
+  if can_paper_file:
+    if in_jail:
+      jail_name
+    else: 
+      send_from_location
+    send_from_date
+  if anyone_opposing or users.number_gathered() > 2 or (users.number_gathered() == 1 and not any_co_appellant()):
     delivery_intro
     for person in delivery_parties:
       if person.is_represented:
@@ -135,13 +142,7 @@ code: |
         person.email_delivery
         person.delivery_date
     hand_delivery_info   
-  set_progress(80)
-  if can_paper_file:
-    if in_jail:
-      jail_name
-    else: 
-      send_from_location
-    send_from_date
+  set_progress(80) 
 
   nav.set_section('section_user')
   
@@ -167,23 +168,6 @@ code: |
   if i > 0:
     other_orders.there_is_another = False
   other_orders[i].complete = True
----
-code: |
-  def paper_filing_option():
-    if users[0].has_email_address:
-      return False
-    for party in delivery_parties:
-      if party.knows_delivery_method and (party.email_delivery or party.efm_delivery):
-        return False
-    return True
----
-#Does not use reconsider or depends on. Instead, paper_filing_block
-code: |
-  if paper_filing_option():
-    paper_filing_review = True
-  else:
-    paper_filing_review = False
-  paper_filing_block = True
 ---
 #users gather loop
 code: |
@@ -541,7 +525,7 @@ subquestion: |
   * You must wait at least 8 days after you filed your Motion to Vacate, and
   * You must file your appeal no later than 30 days from when you filed your Motion to Vacate.
  
-  It has been ${date_difference(starting=vacate_file_date, ending=today())} days since the Motion to Vacate was filed.
+  It has been ${date_difference(starting=vacate_file_date, ending=today())} since the Motion to Vacate was filed.
 
   You may ask for more time to file your *Notice of Appeal*.  You can only file a *Notice of Appeal* after the deadline by filing a *Motion to Continue or Extend Time* within 30 days of the deadline. You must attach your *Notice of Appeal* to the motion and pay a $50 filing fee. If you cannot afford to pay the filing fee, you can ask the court to file for free or at a reduced cost by filing an Appellate Fee Waiver.
 
@@ -613,7 +597,7 @@ question: |
 subquestion: |
   You must file your appeal within 30 days after the court ruled on the Motion to Reconsider or other post-judgment motion.
 
-  It has been ${date_difference(starting=reconsider_ruling_date, ending=today())} since the post-judgment motion was filed.
+  It has been ${date_difference(starting=reconsider_ruling_date, ending=today())} since the court ruled on the post-judgment motion.
 
   You may ask for more time to file your *Notice of Appeal*. To do so, file a motion for leave to file a late *Notice of Appeal* with the appellate court within 30 days of when your *Notice of Appeal* was originally due. You must attach your *Notice of Appeal* to the motion and pay a $50 filing fee. If you cannot afford to pay the filing fee, you can ask the court to file for free or at a reduced cost by filing an Appellate Fee Waiver.
 
@@ -821,7 +805,7 @@ subject: |
 content: |
   **Change the order or judgment**: This means the appellate court changing what the judgment says.
 
-  For example, if you argue that the trial court awarded you an amount that was too low, you may ask the appellate court to change the award to a higher amount
+  For example, if you argue that the trial court awarded you an amount that was too low, you may ask the appellate court to change the award to a higher amount.
 ---
 id: other appeals
 question: |
@@ -966,14 +950,6 @@ fields:
   - no label: minor_involved
     datatype: yesnoradio
 ---
-reconsider: True
-code: |
-  co_appellant_options = []
-  for index, user in enumerate(users):
-    if index != 0:
-      co_appellant_options.append({user.name_full(): user.name_full() })
-  co_appellant_options.append({"none": "No other " + party_label + " is joining the appeal"})
----
 id: is party co appellant
 question: |
   Is ${users[i].name_full()} joining you in appealing the case?
@@ -1039,7 +1015,7 @@ subquestion: |
   
   ${ collapse_template(case_number_help) }  
 fields:
-  - Case number: case_number
+  - Circuit court case number: case_number
     maxlength: 20
 ---
 template: case_number_help
@@ -1206,8 +1182,6 @@ fields:
 ---
 id: knows delivery method
 generic object: ALIndividual
-undefine:
-  - paper_filing_block
 question: |
   % if x.is_represented:
   Do you know **how** and **when** you will send your forms to ${ x.lawyer.name_full() }?
@@ -1240,7 +1214,7 @@ content: |
   * US mail or a delivery company (like UPS or FedEx), or
   * Hand delivery to the party, the party's family member over 13 at their residence, the party's lawyer, or their lawyer's office.
 
-  If the other party listed an email address on the court documents, you must send the forms to them by email or through the e-filing system. You may use US mail, a delivery company, or hand delivery if you or the other party **does not** have an email address.
+  If the other party listed an email address on the court documents, you must send the forms to them by email or through the e-filing system. You may use US mail, a delivery company, or hand delivery if you or the other party **do not** have an email address.
   
   If you are in a prison or jail, you can deliver by mail.
 terms:
@@ -1249,8 +1223,6 @@ terms:
 ---
 generic object: ALIndividual
 id: party delivery method
-undefine:
-  - paper_filing_block
 question: |
   % if x.is_represented:
   How will you send your forms to ${ x.lawyer.name_full() }?
@@ -1258,7 +1230,11 @@ question: |
   How will you send your forms to ${ x.name_full() }?
   % endif
 subquestion: |  
-  If the other party listed an email address on the court documents, you must send the forms to them by email or through the e-filing system. You may use US mail or a delivery company, or hand delivery if you or the other party **does not** have an email address. If you are in a prison or jail, you can deliver by mail.
+  % if can_paper_file:
+  Earlier you said you were exempt from filing electronically. This means you will send your forms by mail or by hand delivery. If you made a mistake, you can click the **Delivery** or **:edit: Edit answers** button to change your answers. 
+  % else:
+  If the other party listed an email address on the court documents, you must send the forms to them by email or through the e-filing system. You may use US mail or a delivery company, or hand delivery if you or the other party **does not** have an email address.
+  % endif
 
   For best results, complete the Proof of Delivery section and send the forms today.
 
@@ -1464,7 +1440,7 @@ question: |
 subquestion: |
   You will have to file your forms with the trial court. Court forms are filed using electronic filing, also called "e-filing." To learn more about e-filing, read ILAO's [**E-filing FAQ**](https://www.illinoislegalaid.org/node/184011).
   
-  You must file your forms by e-filing unless you are exempt. If you want to ask for an e-filing exemption, you can use ILAO's [**E-filing exemption - Circuit court Easy Form**](https://www.illinoislegalaid.org/node/109376).
+  You must file your forms by e-filing unless you are exempt. If you want to ask for an e-filing exemption, you can use ILAO's [**E-filing exemption - Circuit court Easy Form**](https://www.illinoislegalaid.org/node/109376). If the trial court already gave you an e-filing exemption, you can click **Yes**.
 
   You may be exempt from e-filing if:
   
@@ -1474,7 +1450,7 @@ subquestion: |
     * You do not have an email account,
     * You do not have a credit card, debit card, or bank account,
     * You have trouble reading, writing, or speaking English,
-    * Tried to e-file your forms but were not able to, or
+    * You tried to e-file your forms but were not able to, or
     * You are filing an emergency case.
 fields:
   - Are any of the above exemptions true of you?: can_paper_file
@@ -1532,7 +1508,7 @@ question: |
 subquestion: |
   Since you are not e-filing, you will have to send your forms to the circuit clerk by US mail or by a third-party delivery company.
 
-  If you do not know this, you can leave this blank.
+  If you do not know this you can leave this blank now. However, you must add the sending location to the *Certificate of Court Filing by Mail* before you send it.
 fields:
   - Address or intersection of mailbox or delivery company: send_from_location
     maxlength: 40
@@ -1549,7 +1525,7 @@ id: send from date
 question: |
   When will you mail your forms to the circuit clerk?
 subquestion: |
-  If you do not know this, you can leave this blank.
+  If you do not know this you can leave this blank now. However, you must add the date and time to the *Certificate of Court Filing by Mail* before you send it.
 fields:
   - Date: send_from_date
     datatype: date
@@ -1612,8 +1588,6 @@ fields:
 ---
 sets:
   - users[0].email
-undefine:
-  - paper_filing_block
 id: your contact information
 question: |
   Your contact information
@@ -1696,12 +1670,14 @@ subquestion: |
   
   % endif
   % if can_paper_file:
-  After you download your forms, you will need to serve your forms to all other parties in the case and mail them to the circuit clerk of the trial court that heard your case. This program **does not file** your forms for you. 
+  After you download your forms, you will need to mail your forms to the circuit clerk of the trial court that heard your case and deliver them to all other parties in the case. This program **does not file** your forms for you. 
   % else:
   After you download your forms, you will need to serve your forms to all other parties in the case and e-file them with the trial court that heard your case. This program **does not file** your forms for you. 
   % endif
 
   You will need to file a *Docketing Statement* in the appellate court within 14 days of filing your *Notice of Appeal*. You can find the *Docketing Statement* form and instructions at the [**Illinois Courts website**](https://www.illinoiscourts.gov/documents-and-forms/approved-forms/appellate-forms/docketing-statement/).
+
+  Appellate courts usually charge a fee to file an appeal. If you would like to ask the court to waive the fee, you can use ILAO's [**Fee waiver - appellate court Easy Form**](https://www.illinoislegalaid.org/node/88446).
 
   You may want to ask the trial court for a *Report of Proceedings*. You can find the *Request for Report of Proceedings* form and instructions at the [**Illinois Courts website**](https://www.illinoiscourts.gov/documents-and-forms/approved-forms/appellate-forms/request-for-report-of-proceedings/).
 ---
@@ -2346,7 +2322,7 @@ review:
       * I want the appellate court to change the order to say "${change_text.replace("\n", " ").replace("\r", " ")}"
       % endif
       % if make:
-      * I want the appellate court make the trial court do the following: ${make_text.replace("\n", " ").replace("\r", " ")}
+      * I want the appellate court to make the trial court do the following: ${make_text.replace("\n", " ").replace("\r", " ")}
       % endif
       % if other:
       * ${other_text}
@@ -2506,6 +2482,7 @@ review:
     button: |
       **${x.name_full()}'s address:**
       ${x.address.on_one_line(bare=True)}
+    show if: x == users[0] or x.is_joining
   - Edit: x.has_email_address
     button: |
       **${x.name_full()}'s contact info:**
@@ -2617,25 +2594,6 @@ question: |
 subquestion: |
   Edit your answers below.
 review:
-  - Edit: users.revisit
-    button: |
-      **${capitalize(party_label)}s:**
-
-      % for item in users:
-        * ${ item.name_full() }
-      % endfor
-  - Edit: anyone_opposing
-    button: |
-      **Are there any ${ opposing_party }s?**
-      ${word(yesno(anyone_opposing))}
-  - Edit: other_parties.revisit
-    button: |
-      **${capitalize(opposing_party)}s:**
-      
-      % for item in other_parties:
-        * ${item.name_full()}
-      % endfor
-    show if: anyone_opposing
   - Edit: can_paper_file
     button: |
       **Are you exempt from e-filing?**
@@ -2686,6 +2644,25 @@ review:
       I don't know.
       % endif
     show if: can_paper_file
+  - Edit: users.revisit
+    button: |
+      **${capitalize(party_label)}s:**
+
+      % for item in users:
+        * ${ item.name_full() }
+      % endfor
+  - Edit: anyone_opposing
+    button: |
+      **Are there any ${ opposing_party }s?**
+      ${word(yesno(anyone_opposing))}
+  - Edit: other_parties.revisit
+    button: |
+      **${capitalize(opposing_party)}s:**
+      
+      % for item in other_parties:
+        * ${item.name_full()}
+      % endfor
+    show if: anyone_opposing
 ---
 id: user review screen
 event: section_user
@@ -2795,7 +2772,7 @@ review:
       % else:
       No
       % endif
-    show if: court_rule_on_post_motion and (final_judgment or special_findings or special_type)
+    show if: motion_to_reconsider and (final_judgment or special_findings or special_type)
   - Edit: other_orders.there_are_any
     button: |
       **Do you want to add more orders to your appeal?**
@@ -2832,7 +2809,7 @@ review:
       * I want the appellate court to change the order to say "${change_text.replace("\n", " ").replace("\r", " ")}"
       % endif
       % if make:
-      * I want the appellate court make the trial court do the following: ${make_text.replace("\n", " ").replace("\r", " ")}
+      * I want the appellate court to make the trial court do the following: ${make_text.replace("\n", " ").replace("\r", " ")}
       % endif
       % if other:
       * ${other_text}
