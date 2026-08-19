@@ -37,7 +37,7 @@ sections:
   - section_order: Trial court order
   - section_relief: Your appeal
   - section_case: Case details
-  - section_delivery: Delivery
+  - section_delivery: Filing and delivery
   - section_user: About you
   - section_download: Download  
 ---
@@ -1508,7 +1508,7 @@ question: |
 subquestion: |
   Since you are not e-filing, you will have to send your forms to the circuit clerk by US mail or by a third-party delivery company.
 
-  If you do not know this you can leave this blank now. However, you must add the sending location to the *Certificate of Court Filing by Mail* before you send it.
+  If you do not know this you can leave this blank now. However, you must add the sending location to the *Certificate of Court Filing by Mail* before you file it.
 fields:
   - Address or intersection of mailbox or delivery company: send_from_location
     maxlength: 40
@@ -1525,7 +1525,7 @@ id: send from date
 question: |
   When will you mail your forms to the circuit clerk?
 subquestion: |
-  If you do not know this you can leave this blank now. However, you must add the date and time to the *Certificate of Court Filing by Mail* before you send it.
+  If you do not know this you can leave this blank now. However, you must add the date and time to the *Certificate of Court Filing by Mail* before you file it.
 fields:
   - Date: send_from_date
     datatype: date
@@ -2588,7 +2588,7 @@ review:
 ---
 id: delivery review screen
 event: section_delivery
-section: Delivery
+section: Filing and delivery
 question: |
   Delivery
 subquestion: |
@@ -2830,7 +2830,7 @@ review:
       % endif
     show if: other_appeals
   - note: |
-      <h4>Case details and delivery</h4>
+      <h4>Case details, filing, and delivery</h4>
   - Edit: party_label
     button: |
       **Your role:**
