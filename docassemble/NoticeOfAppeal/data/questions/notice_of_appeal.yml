@@ -132,7 +132,7 @@ code: |
     else: 
       send_from_location
     send_from_date
-  if anyone_opposing or users.number_gathered() > 2 or (users.number_gathered() == 1 and not any_co_appellant()):
+  if anyone_opposing or users.number_gathered() > 2 or (users.number_gathered() == 2 and not any_co_appellant()):
     delivery_intro
     for person in delivery_parties:
       if person.is_represented:
@@ -291,7 +291,7 @@ subquestion: |
 
   You can start an appeal by filing a *Notice of Appeal*. If someone else in the case has filed an appeal, you can use a *Notice of Appeal* to join their appeal, file a separate appeal, or file a cross-appeal.
 
-  **Note:** If the trial court's decision was a **{default judgment}**, you should not file an appeal. If you want to file a *Motion to Vacate Default Judgment*, use ILAO's [**Vacate default judgment within 30 days Easy Form**](https://www.illinoislegalaid.org/node/30866).
+  **Note:** If the trial court's decision was a **{default judgment}**, you may want to file a *Motion to Vacate Default Judgment* instead of an appeal. That motion asks the court to undo a default judgment. If you would like to file one, use ILAO's [**Vacate default judgment within 30 days Easy Form**](https://www.illinoislegalaid.org/node/30866).
 
   This Easy Form will help you figure out if you are able to appeal the trial court's decision. To learn more, see ILAO's [**civil appeals FAQ**](https://www.illinoislegalaid.org/node/184801).
 terms:
@@ -650,7 +650,7 @@ continue button field: about_fees
 question: |
   About filing fees
 subquestion: |
-  Appellate courts usually charge a fee to file an appeal. If you would like to ask the court to waive the fee, you can use ILAO's [**Fee waiver - appellate court Easy Form**](https://www.illinoislegalaid.org/node/88446).
+  Appellate courts charge a fee to file an appeal. If you would like to ask the court to waive the fee, you can use ILAO's [**Fee waiver - appellate court Easy Form**](https://www.illinoislegalaid.org/node/88446).
 ---
 reconsider: True
 code: |
@@ -939,7 +939,7 @@ id: minor involved
 question: |
   Does the case involve a minor child?
 subquestion: |
-  Some appeals move more quickly if they involve any of the following:
+  Under [**Illinois Supreme Court Rule 311(a)**](https://ilcourtsaudio.blob.core.windows.net/antilles-resources/resources/c44c9b50-7d43-47af-92c6-49d166d289b0/Rule%20311.pdf), appeals move more quickly if they involve any of the following:
 
   * Parental responsibilities (custody),
   * Parenting time (visitation), or
@@ -1169,7 +1169,7 @@ fields:
 id: add lawyer
 generic object: ALIndividual
 question: |
-  Who is  ${ x.name_full() }'s lawyer?
+  Who is ${ x.name_full() }'s lawyer?
 fields:
   - First name: x.lawyer.name.first
   - Middle name: x.lawyer.name.middle
@@ -1675,11 +1675,15 @@ subquestion: |
   After you download your forms, you will need to serve your forms to all other parties in the case and e-file them with the trial court that heard your case. This program **does not file** your forms for you. 
   % endif
 
-  You will need to file a *Docketing Statement* in the appellate court within 14 days of filing your *Notice of Appeal*. You can find the *Docketing Statement* form and instructions at the [**Illinois Courts website**](https://www.illinoiscourts.gov/documents-and-forms/approved-forms/appellate-forms/docketing-statement/).
+  % if not final_judgment and not special_findings and not special_type and not is_tro and rule_307_order:
+  You will need to file a *Docketing Statement* in the appellate court. Since you are appealing a Rule 307(a) order, you must file it within 7 days of filing your *Notice of Appeal*. You can find the *Docketing Statement* form and instructions at the [**Illinois Courts website**](https://www.illinoiscourts.gov/documents-and-forms/approved-forms/appellate-forms/docketing-statement/).
+  % else:
+  You will need to file a *Docketing Statement* in the appellate court. In most cases you must file it within 14 days of filing your *Notice of Appeal*, but in other cases you may need to file it sooner. You can find the *Docketing Statement* form and instructions at the [**Illinois Courts website**](https://www.illinoiscourts.gov/documents-and-forms/approved-forms/appellate-forms/docketing-statement/).
+  % endif
 
   Appellate courts usually charge a fee to file an appeal. If you would like to ask the court to waive the fee, you can use ILAO's [**Fee waiver - appellate court Easy Form**](https://www.illinoislegalaid.org/node/88446).
 
-  You may want to ask the trial court for a *Report of Proceedings*. You can find the *Request for Report of Proceedings* form and instructions at the [**Illinois Courts website**](https://www.illinoiscourts.gov/documents-and-forms/approved-forms/appellate-forms/request-for-report-of-proceedings/).
+  You will need a copy of the *Report of Proceedings*, also called a transcript, during the appeal. You can ask the trial court for a copy of the *Report of Proceedings*. You can find the *Request for Report of Proceedings* form and instructions at the [**Illinois Courts website**](https://www.illinoiscourts.gov/documents-and-forms/approved-forms/appellate-forms/request-for-report-of-proceedings/).
 ---
 id: forms assembling
 continue button field: forms_assembling
