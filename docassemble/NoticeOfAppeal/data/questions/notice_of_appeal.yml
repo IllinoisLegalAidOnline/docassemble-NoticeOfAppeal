@@ -1535,6 +1535,15 @@ fields:
   - Time: send_from_time
     datatype: time
     required: False
+validation code: |
+  if (not showifdef('send_from_date')):
+    knows_from_date = False
+  else:
+    knows_from_date = True
+  if (not showifdef('send_from_time')):
+    knows_from_time = False
+  else:
+    knows_from_time = True
 ---
 id: other party address
 sets:
@@ -1836,8 +1845,8 @@ attachment:
         % else:
         301
         % endif
-    - "standard_appeal": ${True if not other_appeals else False}
-    - "inter_appeal": ${False}
+    - "standard_appeal": ${True if final_judgment and not other_appeals else False}
+    - "inter_appeal": ${True if not final_judgment and not other_appeals else False}
     - "join_appeal": ${True if other_appeals and appeal_type == "join" else False}
     - "separate_appeal": ${True if other_appeals and appeal_type == "separate" else False}
     - "cross_appeal": ${True if other_appeals and appeal_type == "cross" else False}
@@ -1929,8 +1938,8 @@ attachment:
     - "inmate_id": ${inmate_id}
     - "circuit_county_if_jail": ${trial_court.address.county}
     - "circuit_address_if_jail": ${trial_court.address.on_one_line(bare=True)}
-    - "circuit_date_if_jail": ${send_from_date}
-    - "circuit_time_if_jail": ${format_time(send_from_time, format='h:mm a')}
+    - "circuit_date_if_jail": ${send_from_date if knows_from_date else ''}
+    - "circuit_time_if_jail": ${format_time(send_from_time, format='h:mm a') if knows_from_time else ""}
     - "circuit_signature_if_jail": ${users[0].name_full() if e_signature else ""}
     - "circuit_name_if_jail": ${users[0].name_full()}
     - "sign_date_if_jail": ${today() if e_signature else ""}
