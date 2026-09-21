@@ -327,6 +327,8 @@ question: |
 subquestion: |
  A final judgment is entered when the judge has made a final decision and the case is over.
 
+ You can still file an appeal if the ${order_date} order is not the final judgment. This is called an **interlocutory appeal**.
+
  Sometimes a party will file a post-judgment motion, such as a Motion to Reconsider. You can still click **Yes** here even if another party has filed such a motion.
 fields:
   - no label: final_judgment
@@ -1915,8 +1917,8 @@ attachment:
           % else:
           ${state_name(send_from_state)}
           % endif
-    - "circuit_date": ${send_from_date}
-    - "circuit_time": ${format_time(send_from_time, format='h:mm a')}
+    - "circuit_date": ${send_from_date if knows_from_date else ''}
+    - "circuit_time": ${format_time(send_from_time, format='h:mm a') if knows_from_time else ""}
     - "circuit_county": ${trial_court.address.county}
     - "circuit_address": ${trial_court.address.on_one_line(bare=True)}
     - "circuit_signature": ${users[0].name_full() if e_signature else ""}
