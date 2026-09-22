@@ -1223,6 +1223,18 @@ terms:
   - e-filing system: |
       The court's e-filing system could be any approved electronic filing service provider (EFSP).
 ---
+code: |
+  def user_in_jail():
+    if can_paper_file and in_jail:
+      return True
+    return False
+---
+code: |
+  def jail_name_if_defined():
+    if can_paper_file and in_jail:
+      return jail_name
+    return ""
+---
 generic object: ALIndividual
 id: party delivery method
 question: |
@@ -1319,7 +1331,13 @@ fields:
     js show if: 
       val("x.physical_delivery") == true      
     required: False
-  - I will send the forms by mail from a **prison or jail**.: x.jail_delivery
+  - label: |
+      % if user_in_jail():
+      I will send the forms by mail from **${jail_name_if_defined()}**.
+      % else:
+      I will send the forms by mail from a **prison or jail**.
+      % endif
+    field: x.jail_delivery
     datatype: yesnowide
     js show if: 
       val("x.physical_delivery") == true
@@ -1327,31 +1345,31 @@ fields:
   - Name of prison or jail: x.delivery_jail_name
     maxlength: 40
     js show if: 
-      val("x.physical_delivery") == true && val("x.jail_delivery") == true
+      val("x.physical_delivery") == true && val("x.jail_delivery") == true && ${ "false" if user_in_jail() else "true" }
     required: False
   - Street address: x.jail_delivery_address.address
     address autocomplete: True
     js show if: 
-      val("x.physical_delivery") == true && val("x.jail_delivery") == true
+      val("x.physical_delivery") == true && val("x.jail_delivery") == true && ${ "false" if user_in_jail() else "true" }
     required: False
   - Address line 2: x.jail_delivery_address.unit
     js show if: 
-      val("x.physical_delivery") == true && val("x.jail_delivery") == true
+      val("x.physical_delivery") == true && val("x.jail_delivery") == true && ${ "false" if user_in_jail() else "true" }
     required: False
   - City: x.jail_delivery_address.city
     js show if: 
-      val("x.physical_delivery") == true && val("x.jail_delivery") == true
+      val("x.physical_delivery") == true && val("x.jail_delivery") == true && ${ "false" if user_in_jail() else "true" }
     required: False
   - State: x.jail_delivery_address.state
     code: |
       states_list()
     default: IL      
     js show if: 
-      val("x.physical_delivery") == true && val("x.jail_delivery") == true
+      val("x.physical_delivery") == true && val("x.jail_delivery") == true && ${ "false" if user_in_jail() else "true" }
     required: False
   - ZIP code: x.jail_delivery_address.zip
     js show if: 
-      val("x.physical_delivery") == true && val("x.jail_delivery") == true
+      val("x.physical_delivery") == true && val("x.jail_delivery") == true && ${ "false" if user_in_jail() else "true" }
     required: False
 ---
 template: efiling_help
@@ -1711,7 +1729,7 @@ id: get docs screen
 event: get_docs_screen
 question: |
   Download
-subquestion: |   
+subquestion: |     
   Your forms are ready. View and download your forms below. Click **:edit: Make changes** to fix any mistakes.
 
   This program **does not file** your forms with the court or deliver them to other parties in your case. You will need to do this yourself. Learn about [**e-filing in Illinois**](https://www.illinoiscourts.gov/eservices/information-for-filers-without-lawyers).
@@ -1994,12 +2012,16 @@ attachment:
     - "delivery_party_1_from_jail": ${delivery_parties[0].jail_delivery if delivery_parties[0].knows_delivery_method and delivery_parties[0].physical_delivery else ""}
     - "delivery_party_1_jail_name": |
           % if delivery_parties[0].knows_delivery_method and delivery_parties[0].physical_delivery and delivery_parties[0].jail_delivery:
+          % if can_paper_file and in_jail:
+          ${jail_name}, ${appellant_jail_address.on_one_line(bare=True)}
+          % else:
           % if delivery_parties[0].delivery_jail_name != "" and delivery_parties[0].jail_delivery_address.address != "" and delivery_parties[0].jail_delivery_address.city != "" and delivery_parties[0].jail_delivery_address.state != "":
           ${ delivery_parties[0].delivery_jail_name }, ${ delivery_parties[0].jail_delivery_address.on_one_line(bare=True)}
           % elif delivery_parties[0].delivery_jail_name == "":
           ${ delivery_parties[0].jail_delivery_address.on_one_line(bare=True)}
           % else:
           ${ delivery_parties[0].delivery_jail_name }
+          % endif
           % endif
           % else:
           ${""}
@@ -2044,12 +2066,16 @@ attachment:
     - "delivery_party_2_from_jail": ${delivery_parties[1].jail_delivery if delivery_parties[1].knows_delivery_method and delivery_parties[1].physical_delivery else ""}
     - "delivery_party_2_jail_name": |
           % if delivery_parties[1].knows_delivery_method and delivery_parties[1].physical_delivery and delivery_parties[1].jail_delivery:
+          % if can_paper_file and in_jail:
+          ${jail_name}, ${appellant_jail_address.on_one_line(bare=True)}
+          % else:
           % if delivery_parties[1].delivery_jail_name != "" and delivery_parties[1].jail_delivery_address.address != "" and delivery_parties[1].jail_delivery_address.city != "" and delivery_parties[1].jail_delivery_address.state != "":
           ${ delivery_parties[1].delivery_jail_name }, ${ delivery_parties[1].jail_delivery_address.on_one_line(bare=True)}
           % elif delivery_parties[1].delivery_jail_name == "":
           ${ delivery_parties[1].jail_delivery_address.on_one_line(bare=True)}
           % else:
           ${ delivery_parties[1].delivery_jail_name }
+          % endif
           % endif
           % else:
           ${""}
@@ -2095,12 +2121,16 @@ attachment:
     - "delivery_party_3_from_jail": ${delivery_parties[2].jail_delivery if delivery_parties[2].knows_delivery_method and delivery_parties[2].physical_delivery else ""}
     - "delivery_party_3_jail_name": |
           % if delivery_parties[2].knows_delivery_method and delivery_parties[2].physical_delivery and delivery_parties[2].jail_delivery:
+          % if can_paper_file and in_jail:
+          ${jail_name}, ${appellant_jail_address.on_one_line(bare=True)}
+          % else:
           % if delivery_parties[2].delivery_jail_name != "" and delivery_parties[2].jail_delivery_address.address != "" and delivery_parties[2].jail_delivery_address.city != "" and delivery_parties[2].jail_delivery_address.state != "":
           ${ delivery_parties[2].delivery_jail_name }, ${ delivery_parties[2].jail_delivery_address.on_one_line(bare=True)}
           % elif delivery_parties[2].delivery_jail_name == "":
           ${ delivery_parties[2].jail_delivery_address.on_one_line(bare=True)}
           % else:
           ${ delivery_parties[2].delivery_jail_name }
+          % endif
           % endif
           % else:
           ${""}
@@ -2175,7 +2205,16 @@ attachment:
           % else:
           ${ "" }
           % endif
-    - "party_jail_name": ${x.delivery_jail_name if x.knows_delivery_method and x.physical_delivery and x.jail_delivery else ""}
+    - "party_jail_name": |
+        % if x.knows_delivery_method and x.physical_delivery and x.jail_delivery:
+        % if can_paper_file and in_jail:
+        ${jail_name}, ${appellant_jail_address.on_one_line(bare=True)}
+        % else:
+        ${x.delivery_jail_name} 
+        % endif
+        % else:
+        ""
+        % endif
     - "party_date": ${ x.delivery_date if x.knows_delivery_method and x.knows_delivery_date else '' }
     - "party_time": ${ format_time(x.delivery_time, format='h:mm a') if x.knows_delivery_method and x.knows_delivery_time else '' }
     - "e_signature": ${users[0].name_full() if e_signature else ""}
