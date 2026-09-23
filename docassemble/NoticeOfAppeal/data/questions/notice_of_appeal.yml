@@ -557,7 +557,7 @@ subquestion: |
 
   * Motion to Reconsider,
   * Motion to Enforce, or
-  * Motion to Modify
+  * Motion to Modify.
 fields:
   - no label: motion_to_reconsider
     datatype: yesnoradio
@@ -2634,9 +2634,11 @@ review:
       % if x.delivery_date != "" and x.delivery_time != "":
       ${ x.delivery_date } at ${ format_time(x.delivery_time, "h:mm a") }
       % elif x.delivery_date != "":
-      ${x.delivery_date}
+      ${x.delivery_date}, time not entered.
+      % elif x.delivery_time != "":
+      Date not entered, ${ format_time(x.delivery_time, "h:mm a") }.
       % else:
-      I don't know.
+      Incomplete date and time entered.
       % endif
     show if: x.knows_delivery_method
 ---
@@ -2689,13 +2691,15 @@ review:
     show if: can_paper_file and not in_jail
   - Edit: send_from_date
     button: |
-      **Filing on:**
+      **Filed by mail on:**
       % if send_from_date != "" and send_from_time != "":
       ${ send_from_date } at ${ format_time(send_from_time, "h:mm a") }
       % elif send_from_date != "":
-      ${send_from_date}
+      ${send_from_date}, time not entered.
+      % elif send_from_time != "":
+      Date not entered, ${ format_time(send_from_time, "h:mm a") }.
       % else:
-      I don't know.
+      Incomplete date and time entered.
       % endif
     show if: can_paper_file
   - Edit: users.revisit
@@ -2999,13 +3003,15 @@ review:
     show if: can_paper_file and not in_jail
   - Edit: send_from_date
     button: |
-      **Filing on:**
+      **Filed by mail on:**
       % if send_from_date != "" and send_from_time != "":
       ${ send_from_date } at ${ format_time(send_from_time, "h:mm a") }
       % elif send_from_date != "":
-      ${send_from_date}
+      ${send_from_date}, time not entered.
+      % elif send_from_time != "":
+      Date not entered, ${ format_time(send_from_time, "h:mm a") }.
       % else:
-      I don't know.
+      Incomplete date and time entered.
       % endif
     show if: can_paper_file
   - note: |
