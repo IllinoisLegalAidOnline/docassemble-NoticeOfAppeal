@@ -13,7 +13,7 @@ include:
 objects:
   - users: ALPeopleList.using(there_are_any=True, complete_attribute=['complete'])
   - other_parties: ALPeopleList.using(there_are_any=True, complete_attribute=['complete'])
-  - court_list: ALCourtLoader.using(file_name='docassemble.ILAO:data/sources/il_courts.xlsx')
+  - court_list: ALCourtLoader.using(file_name='docassemble.ILAO:data/sources/il_courts_plus.xlsx')
   - other_orders: ALPeopleList.using(complete_attribute=['complete'])
   - judge: ALIndividual
   - users[i].lawyer: ALIndividual
@@ -121,7 +121,9 @@ code: |
   case_number
   if trial_court_index == -1:
     cook_district
-  court_county
+  elif trial_court_index == -2:
+    kane_district
+  courthouse_info
   judge.name.first
   appellate_district
 
@@ -255,7 +257,7 @@ subquestion: |
 
   This program helps you make a *Notice of Appeal*. You can use it to tell the court and other parties in your case that you are appealing a decision by the circuit (trial) court judge.
 
-  To learn more, read ILAO's article about [**civil appeals**](https://www.illinoislegalaid.org/node/171791).
+  To learn more, see ILAO's article on [**civil appeals**](https://www.illinoislegalaid.org/node/171791).
 field: sees_nav_bar
 ---
 id: instructions
@@ -540,7 +542,7 @@ event: not_appealable
 question: |
   Sorry
 subquestion: |
-  The ${order_date} order is not eligible for appeal using this program. This program can only be used for final judgments, orders with special findings, Rule 304 orders, temporary restraining orders, and Rule 307 orders. To learn more, read ILAO's article about [**civil appeals**](https://www.illinoislegalaid.org/node/171791).
+  The ${order_date} order is not eligible for appeal using this program. This program can only be used for final judgments, orders with special findings, Rule 304 orders, temporary restraining orders, and Rule 307 orders. To learn more, see ILAO's article on [**civil appeals**](https://www.illinoislegalaid.org/node/171791).
 
   You may want to talk with a lawyer to discuss your options. Use **[Get Legal Help](https://www.illinoislegalaid.org/get-legal-help)** to find free or low-cost legal services in your area.
 
@@ -652,7 +654,7 @@ continue button field: about_fees
 question: |
   About filing fees
 subquestion: |
-  Appellate courts charge a fee to file an appeal. If you would like to ask the court to waive the fee, you can use ILAO's [**Fee waiver - appellate court Easy Form**](https://www.illinoislegalaid.org/node/88446).
+  Appellate courts charge a fee to file an appeal. If you would like to ask the court to waive the fee, you can use ILAO's [**Fee waiver - Appellate Court Easy Form**](https://www.illinoislegalaid.org/node/88446).
 ---
 reconsider: True
 code: |
@@ -1064,14 +1066,43 @@ template: cook_district_help
 subject: |
   **What if I am not sure?**
 content: |  
-  Visit **[Illinois Court Help](https://www.ilcourthelp.gov/)**, or you can call or text (833) 411-1121 for assistance.
+  For assistance you can contact Illinois Court Help:
+
+  * **[Visit the Illinois Court Help website :external-link:](https://www.ilcourthelp.gov/)**,
+  * <a href="tel:833-411-1121">**Call (833) 411-1121 :phone:**</a>, or
+  * <a href="sms:833-411-1121">**Text (833) 411-1121 :comment:**</a>.
+---
+id: Kane County district
+question: |
+  In which Kane County courthouse was the court case filed?
+subquestion: |
+  This information should be found near the top of your court papers.
+
+  ${ collapse_template(kane_district_help) }  
+fields: 
+  - no label: kane_district
+    input type: radio
+    choices:
+      - Kane County Courthouse, 100 S. 3rd Street, Geneva: 52
+      - Kane County Judicial Center, 37W777 Route 38, St. Charles: 53
+      - Kane County Juvenile Justice Center, 37W655 Route 38, St. Charles: 54
+---
+template: kane_district_help
+subject: |
+  **What if I am not sure?**
+content: |  
+  For assistance you can contact Illinois Court Help:
+
+  * **[Visit the Illinois Court Help website :external-link:](https://www.ilcourthelp.gov/)**,
+  * <a href="tel:833-411-1121">**Call (833) 411-1121 :phone:**</a>, or
+  * <a href="sms:833-411-1121">**Text (833) 411-1121 :comment:**</a>.
 ---
 code: |
   def court_county_lookup(lowercase=False):
     all_court_counties = court_list._load_courts()['address_county'].items()
-    filtered_courts = [(-1, "cook")] if lowercase else [(-1, "Cook")]
+    filtered_courts = [(-1, "cook"), (-2, "kane")] if lowercase else [(-1, "Cook"), (-2, "Kane")]
     for court in all_court_counties:
-      if court[1] != "Cook":
+      if court[1] != "Cook" and court[1] != "Kane":
         court_name = court[1].lower() if lowercase else court[1]
         filtered_courts.append((court[0],court_name))
     return sorted( filtered_courts, key=lambda y: y[1])
@@ -1079,21 +1110,23 @@ code: |
 depends on:
   - trial_court_index
   - cook_district
+  - kane_district
 code: |
   if trial_court_index == -1:
-    trial_court = court_list.as_court('trial_court', cook_district)
+    trial_court = court_list.as_court('trial_court', int(cook_district))
+
+  elif trial_court_index == -2:
+    trial_court = court_list.as_court('trial_court', int(kane_district))
+  
   else:
     trial_court = court_list.as_court('trial_court', trial_court_index)
     
   court_name = str(trial_court.name)
   court_street_address = str(trial_court.address.address)
-  court_full_street = str(trial_court.address.line_one(bare=True))
   court_city = str(trial_court.address.city)
   court_state = str(trial_court.address.state)
   court_zip = str(trial_court.address.zip)
-  court_csz = str(trial_court.address.line_two())
-  court_county = str(trial_court.address.county)
-  courthouse_info = court_name + ", " + court_street_address + ", " + court_city + ", " + court_state + " " + court_zip
+  courthouse_info = court_name + ", " + court_street_address + ", " + court_city + ", " + court_state
 ---
 template: county_lookup_help
 subject: |
@@ -1374,11 +1407,13 @@ fields:
 ---
 template: efiling_help
 subject: |
-  **What if I need help?**
+  **What if I need help sending my forms electronically?**
 content: |  
-  If you need help delivering by email or using the e-filing service provider, you can visit a [**Legal Self-Help Center**](https://www.illinoislegalaid.org/get-legal-help/lshc-directory) or you can call or text [**Illinois Court Help**](https://www.ilcourthelp.gov) at 833-411-1121.
+  If you need help delivering by email or using the e-filing system, you can visit a [**Legal Self-Help Center :external-link:**](https://www.illinoislegalaid.org/get-legal-help/lshc-directory). You can also contact Illinois Court Help:
 
-  To learn more, read [**ILAO's article about e-filing**](https://www.illinoislegalaid.org/node/109496).
+  * **[Visit the Illinois Court Help website :external-link:](https://www.ilcourthelp.gov/)**,
+  * <a href="tel:833-411-1121">**Call (833) 411-1121 :phone:**</a>, or
+  * <a href="sms:833-411-1121">**Text (833) 411-1121 :comment:**</a>.
 ---
 id: delivery time
 generic object: ALIndividual
@@ -1458,7 +1493,7 @@ id: can paper file
 question: |
   About e-filing
 subquestion: |
-  You will have to file your forms with the trial court. Court forms are filed using electronic filing, also called "e-filing." To learn more about e-filing, read ILAO's [**E-filing FAQ**](https://www.illinoislegalaid.org/node/184011).
+  You will have to file your forms with the trial court. Court forms are filed using electronic filing, also called "e-filing." To learn more about e-filing, see ILAO's [**E-filing FAQ**](https://www.illinoislegalaid.org/node/184011).
   
   You must file your forms by e-filing unless you are exempt. If you want to ask for an e-filing exemption, you can use ILAO's [**E-filing exemption - Circuit court Easy Form**](https://www.illinoislegalaid.org/node/109376). If the trial court already gave you an e-filing exemption, you can click **Yes**.
 
@@ -1710,7 +1745,7 @@ subquestion: |
   You will need to file a *Docketing Statement* in the appellate court. In most cases you must file it within 14 days of filing your *Notice of Appeal*, but in other cases you may need to file it sooner. You can find the *Docketing Statement* form and instructions at the [**Illinois Courts website**](https://www.illinoiscourts.gov/documents-and-forms/approved-forms/appellate-forms/docketing-statement/).
   % endif
 
-  Appellate courts usually charge a fee to file an appeal. If you would like to ask the court to waive the fee, you can use ILAO's [**Fee waiver - appellate court Easy Form**](https://www.illinoislegalaid.org/node/88446).
+  Appellate courts usually charge a fee to file an appeal. If you would like to ask the court to waive the fee, you can use ILAO's [**Fee waiver - Appellate Court Easy Form**](https://www.illinoislegalaid.org/node/88446).
 
   You will need a copy of the Report of Proceedings (transcripts) for the appeal. Ask the court reporter for a copy of the transcripts. You can find a *Request for Report of Proceedings* form and instructions at the [**Illinois Courts website**](https://www.illinoiscourts.gov/documents-and-forms/approved-forms/appellate-forms/request-for-report-of-proceedings/).
 ---
@@ -2449,11 +2484,13 @@ review:
       - trial_court_index
       - recompute:
         - trial_court
-        - court_county
     button: |
       **County where the case took place:**
       ${ trial_court.address.county }
-  - Edit: cook_district
+  - Edit: 
+      - cook_district
+      - recompute:
+        - trial_court
     button: |
       **Cook County courthouse:**
       % if cook_district == "15":
@@ -2470,6 +2507,23 @@ review:
       ${ "Sixth Municipal District, 16501 South Kedzie Parkway, Markham" }
       % endif      
     show if: trial_court_index == -1
+  - Edit:
+      - kane_district
+      - recompute:
+        - trial_court
+    button: |
+      **Kane County courthouse:**
+      % if kane_district == "52":
+      ${ "Kane County Courthouse, 100 S. 3rd Street, Geneva" }
+      % elif kane_district == "53":
+      ${ "Kane County Judicial Center, 37W777 Route 38, St. Charles" }
+      % elif kane_district == "54":
+      ${ "Kane County Juvenile Justice Center, 37W655 Route 38, St. Charles" }
+      % else:
+      No courthouse selected
+      % endif
+    show if: trial_court_index == -2
+
   - Edit: judge.name.first
     button: |
       **Circuit court judge:**
@@ -2933,11 +2987,13 @@ review:
       - trial_court_index
       - recompute:
         - trial_court
-        - court_county
     button: |
       **County where the case took place:**
       ${ trial_court.address.county }
-  - Edit: cook_district
+  - Edit: 
+      - cook_district
+      - recompute:
+        - trial_court
     button: |
       **Cook County courthouse:**
       % if cook_district == "15":
@@ -2954,6 +3010,22 @@ review:
       ${ "Sixth Municipal District, 16501 South Kedzie Parkway, Markham" }
       % endif      
     show if: trial_court_index == -1
+  - Edit:
+      - kane_district
+      - recompute:
+        - trial_court
+    button: |
+      **Kane County courthouse:**
+      % if kane_district == "52":
+      ${ "Kane County Courthouse, 100 S. 3rd Street, Geneva" }
+      % elif kane_district == "53":
+      ${ "Kane County Judicial Center, 37W777 Route 38, St. Charles" }
+      % elif kane_district == "54":
+      ${ "Kane County Juvenile Justice Center, 37W655 Route 38, St. Charles" }
+      % else:
+      No courthouse selected
+      % endif
+    show if: trial_court_index == -2
   - Edit: judge.name.first
     button: |
       **Circuit court judge:**
